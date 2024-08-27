@@ -2,8 +2,11 @@ from argparse import ArgumentParser, Namespace
 
 from easydict import EasyDict
 from huggingface_hub import hf_hub_download
+import torch.cuda
+import torch.distributed as dist
 
 from inference_utils import *
+from video_to_video.context_parallel import initialize_context_parallel, get_context_parallel_rank
 from video_to_video.utils.seed import setup_seed
 from video_to_video.video_to_video_model import VideoToVideo
 
@@ -85,7 +88,10 @@ class VEnhancer():
 
         output = tensor2vid(output)
         file_name = f'{text}.mp4'
-        save_video(output, self.result_dir, file_name, fps=target_fps)
+
+        if get_context_parallel_rank() == 0:
+            save_video(output, self.result_dir, file_name, fps=target_fps)
+        dist.barrier()
         return os.path.join(self.result_dir, file_name)
 
     def download_model(self):
@@ -122,6 +128,18 @@ def parse_args() -> Namespace:
 def main():
 
     args = parse_args()
+
+    world_size = int(os.environ['WORLD_SIZE'])
+    rank = int(os.environ["RANK"])
+    gpu_id = int(os.environ['LOCAL_RANK'])
+
+    dist.init_process_group(
+        backend="nccl", rank=rank, world_size=world_size,
+        init_method='env://',
+    )
+    torch.cuda.set_device(gpu_id)
+
+    initialize_context_parallel(world_size)
 
     input_path = args.input_path
     prompt = args.prompt

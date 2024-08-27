@@ -15,6 +15,8 @@ import torch.distributed as dist
 import xformers
 import xformers.ops
 
+from .parallel_modules import ContextParallelGroupNorm, ContextParallelConv3d, all_to_all
+from ..context_parallel import get_context_parallel_group, get_context_parallel_world_size, get_context_parallel_rank
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +124,11 @@ class MemoryEfficientCrossAttention(nn.Module):
         self.to_k = nn.Linear(context_dim, inner_dim, bias=False)
         self.to_v = nn.Linear(context_dim, inner_dim, bias=False)
         self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, query_dim), nn.Dropout(dropout))
+            nn.Linear(
+                inner_dim, query_dim
+            ),
+            nn.Dropout(dropout)
+        )
         self.attention_op: Optional[Any] = None
 
     def forward(self, x, context=None, mask=None):
@@ -362,11 +368,16 @@ class FeedForward(nn.Module):
         super().__init__()
         inner_dim = int(dim * mult)
         dim_out = default(dim_out, dim)
-        project_in = nn.Sequential(nn.Linear(
-            dim, inner_dim), nn.GELU()) if not glu else GEGLU(dim, inner_dim)
+        project_in = nn.Sequential(
+            nn.Linear(dim, inner_dim),
+            nn.GELU()
+        ) if not glu else GEGLU(dim, inner_dim)
 
-        self.net = nn.Sequential(project_in, nn.Dropout(dropout),
-                                 nn.Linear(inner_dim, dim_out))
+        self.net = nn.Sequential(
+            project_in,
+            nn.Dropout(dropout),
+            nn.Linear(inner_dim, dim_out)
+        )
 
     def forward(self, x):
         return self.net(x)
@@ -671,7 +682,7 @@ class TemporalTransformer(nn.Module):
             context_dim = [context_dim]
         self.in_channels = in_channels
         inner_dim = n_heads * d_head
-        self.norm = torch.nn.GroupNorm(
+        self.norm = ContextParallelGroupNorm(
             num_groups=32, num_channels=in_channels, eps=1e-6, affine=True)
         if not use_linear:
             self.proj_in = nn.Conv1d(
@@ -702,22 +713,29 @@ class TemporalTransformer(nn.Module):
         self.use_linear = use_linear
 
     def forward(self, x, context=None):
+        # x should in (b, c, f, h, w) format
+
         # note: if no context is given, cross-attention defaults to self-attention
         if self.only_self_att:
             context = None
         if not isinstance(context, list):
             context = [context]
-        b, c, f, h, w = x.shape
+
+        b, c, f_shard, h, w = x.shape
         x_in = x
         x = self.norm(x)
 
+        x = rearrange(x, 'b c f h w -> b c f (h w)').contiguous()
+
+        x = all_to_all(x, gather_dim=2, scatter_dim=3, group=get_context_parallel_group())
+
         if not self.use_linear:
-            x = rearrange(x, 'b c f h w -> (b h w) c f').contiguous()
+            x = rearrange(x, 'b c f hw -> (b hw) c f').contiguous()
             x = self.proj_in(x)
         # [16384, 16, 320]
         if self.use_linear:
             x = rearrange(
-                x, 'b c f h w -> (b h w) f c').contiguous()
+                x, 'b c f hw -> (b hw) f c').contiguous()
             x = self.proj_in(x)
             x = rearrange(
                 x, 'bhw f c -> bhw c f').contiguous()
@@ -746,12 +764,15 @@ class TemporalTransformer(nn.Module):
             x = rearrange(x, 'b hw f c -> (b hw) f c').contiguous()
             x = self.proj_out(x)
             x = rearrange(
-                x, '(b h w) f c -> b c f h w', b=b, h=h, w=w).contiguous()
+                x, '(b hw) f c -> b c f hw', b=b).contiguous()
         if not self.use_linear:
             x = rearrange(x, 'b hw f c -> (b hw) c f').contiguous()
             x = self.proj_out(x)
             x = rearrange(
-                x, '(b h w) c f -> b c f h w', b=b, h=h, w=w).contiguous()
+                x, '(b hw) c f -> b c f hw', b=b).contiguous()
+
+        x = all_to_all(x, gather_dim=3, scatter_dim=2, group=get_context_parallel_group())
+        x = rearrange(x, 'b c f (h w) -> b c f h w', h=h).contiguous()
 
         if self.multiply_zero:
             x = 0.0 * x + x_in
@@ -777,17 +798,17 @@ class TemporalConvBlock_v2(nn.Module):
 
         # conv layers
         self.conv1 = nn.Sequential(
-            nn.GroupNorm(32, in_dim), nn.SiLU(),
-            nn.Conv3d(in_dim, out_dim, (3, 1, 1), padding=(1, 0, 0)))
+            ContextParallelGroupNorm(32, in_dim), nn.SiLU(),
+            ContextParallelConv3d(in_dim, out_dim, (3, 1, 1), padding=(1, 0, 0)))
         self.conv2 = nn.Sequential(
-            nn.GroupNorm(32, out_dim), nn.SiLU(), nn.Dropout(dropout),
-            nn.Conv3d(out_dim, in_dim, (3, 1, 1), padding=(1, 0, 0)))
+            ContextParallelGroupNorm(32, out_dim), nn.SiLU(), nn.Dropout(dropout),
+            ContextParallelConv3d(out_dim, in_dim, (3, 1, 1), padding=(1, 0, 0)))
         self.conv3 = nn.Sequential(
-            nn.GroupNorm(32, out_dim), nn.SiLU(), nn.Dropout(dropout),
-            nn.Conv3d(out_dim, in_dim, (3, 1, 1), padding=(1, 0, 0)))
+            ContextParallelGroupNorm(32, out_dim), nn.SiLU(), nn.Dropout(dropout),
+            ContextParallelConv3d(out_dim, in_dim, (3, 1, 1), padding=(1, 0, 0)))
         self.conv4 = nn.Sequential(
-            nn.GroupNorm(32, out_dim), nn.SiLU(), nn.Dropout(dropout),
-            nn.Conv3d(out_dim, in_dim, (3, 1, 1), padding=(1, 0, 0)))
+            ContextParallelGroupNorm(32, out_dim), nn.SiLU(), nn.Dropout(dropout),
+            ContextParallelConv3d(out_dim, in_dim, (3, 1, 1), padding=(1, 0, 0)))
 
         # zero out the last layer params,so the conv block is identity
         nn.init.zeros_(self.conv4[-1].weight)
@@ -1160,17 +1181,33 @@ class ControlledV2VUNet(Vid2VidSDUNet):
                 mask_last_frame_num=0,
                 ):
 
-        batch, c, f, h, w= x.shape
+        logger.info(f"complete input shape: {x.shape}")
+
+        f = x.shape[2]
+
+        # assert x.shape[2] % get_context_parallel_world_size() == 0, "frames should be divisible by parallel gpus"
+        x = torch.chunk(x, chunks=get_context_parallel_world_size(), dim=2)
+        l_f_shard_per_rank = [_.shape[2] for _ in x]
+        x = x[get_context_parallel_rank()]
+
+        batch, c, f_shard, h, w= x.shape
+
+        logger.info(f"sharded input shape: {x.shape}")
+
         device = x.device
         self.batch = batch
 
+        logger.info(f"hint shape: {hint.shape}")
+        logger.info(f"t_hint shape: {t_hint.shape}")
+        logger.info(f"mask_cond shape: {mask_cond.shape}")
+        logger.info(f"s_cond shape: {s_cond.shape}")
         control = self.VideoControlNet(x, t, y, hint=hint, t_hint=t_hint, mask_cond=mask_cond, s_cond=s_cond)
 
         e = self.time_embed(sinusoidal_embedding(t, self.dim))
-        e = e.repeat_interleave(repeats=f, dim=0)
+        e = e.repeat_interleave(repeats=f_shard, dim=0)
 
         context = y
-        context = context.repeat_interleave(repeats=f, dim=0)
+        context = context.repeat_interleave(repeats=f_shard, dim=0)
 
         # always in shape (b f) c h w, except for temporal layer
         x = rearrange(x, 'b c f h w -> (b f) c h w')
@@ -1204,7 +1241,20 @@ class ControlledV2VUNet(Vid2VidSDUNet):
 
         # reshape back to (b c f h w)
         x = rearrange(x, '(b f) c h w -> b c f h w', b=batch)
-        return x
+
+        if get_context_parallel_rank() == get_context_parallel_world_size() - 1:
+            if f_shard != l_f_shard_per_rank[0]:
+                pad_f = l_f_shard_per_rank[0] - f_shard
+                x = torch.cat([x, x[:,:,-1:].expand(-1, -1, pad_f, -1, -1)], dim=2)
+
+        x = x.contiguous()
+
+        x_all = [torch.empty_like(x) for _ in range(get_context_parallel_world_size())]
+        dist.all_gather(x_all, x, group=get_context_parallel_group())
+
+        x_all = torch.cat(x_all, dim=2)[:, :, :f]
+
+        return x_all
 
     def _forward_single(self,
                         module,
@@ -1465,7 +1515,11 @@ class VideoControlNet(nn.Module):
                 mask_cond=None,
                 ):
 
-        batch, x_c, f, h, w = x.shape
+        batch, x_c, f_shard, h, w = x.shape
+        f = torch.tensor(f_shard, device="cuda")
+        dist.all_reduce(f)
+        logger.info(f"complete f: {f}")
+
         device = x.device
         self.batch = batch
 
@@ -1482,6 +1536,8 @@ class VideoControlNet(nn.Module):
                     hint_inds = mask_cond_per_batch[inds]
                     add[i,:,inds] += hints[i,:,hint_inds]
                     # add[i,:,inds] += hints[i]
+
+            add = torch.chunk(add, chunks=get_context_parallel_world_size(), dim=2)[get_context_parallel_rank()]
             add = rearrange(add, 'b c f h w -> (b f) c h w')
 
         e = self.time_embed(sinusoidal_embedding(t, self.dim))
@@ -1513,7 +1569,11 @@ class VideoControlNet(nn.Module):
                 e_scale = e_scale.repeat_interleave(repeats=f, dim=0)
                 e += e_scale
 
-        context = y.repeat_interleave(repeats=f, dim=0)
+        context = y.repeat_interleave(repeats=f_shard, dim=0)
+
+        e = rearrange(e, '(b f) d -> b f d', b=batch)
+        e = torch.chunk(e, chunks=get_context_parallel_world_size(), dim=1)[get_context_parallel_rank()]
+        e = rearrange(e, 'b f d -> (b f) d')
 
         # always in shape (b f) c h w, except for temporal layer
         x = rearrange(x, 'b c f h w -> (b f) c h w')
@@ -1599,6 +1659,7 @@ class TimestepBlock(nn.Module):
         """
         Apply the module to `x` given `emb` timestep embeddings.
         """
+
 
 class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     """

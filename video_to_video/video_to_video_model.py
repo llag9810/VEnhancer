@@ -21,7 +21,7 @@ logger = get_logger()
 class VideoToVideo():
     def __init__(self, opt):
         self.opt = opt
-        self.device = torch.device(f'cuda:0')
+        self.device = torch.device(f'cuda')
         clip_encoder = FrozenOpenCLIPEmbedder(device=self.device, pretrained='laion2b_s32b_b79k')
         clip_encoder.model.to(self.device)
         self.clip_encoder = clip_encoder
@@ -36,7 +36,7 @@ class VideoToVideo():
         if 'state_dict' in load_dict:
             load_dict = load_dict['state_dict']
         ret = generator.load_state_dict(load_dict, strict=True)
-        
+
         self.generator = generator.half()
         logger.info('Load model path {}, with local status {}'.format(cfg.model_path, ret))
 
@@ -102,7 +102,7 @@ class VideoToVideo():
         video_data_feature = self.vae_encode(video_data)
         torch.cuda.empty_cache()
 
-        y = self.clip_encoder(y).detach() 
+        y = self.clip_encoder(y).detach()
 
         with amp.autocast(enabled=True):
 
@@ -112,7 +112,7 @@ class VideoToVideo():
 
             t = torch.LongTensor([total_noise_levels-1]).to(self.device)
             noised_lr = self.diffusion.diffuse(video_data_feature, t)
-            
+
             model_kwargs = [{'y': y}, {'y': self.negative_y}]
             model_kwargs.append({'hint': noised_hint})
             model_kwargs.append({'mask_cond': mask_cond})
@@ -122,7 +122,7 @@ class VideoToVideo():
             torch.cuda.empty_cache()
             chunk_inds = make_chunks(frames_num, interp_f_num) if frames_num > 32 else None
 
-            solver = 'dpmpp_2m_sde' # 'heun' | 'dpmpp_2m_sde' 
+            solver = 'dpmpp_2m_sde' # 'heun' | 'dpmpp_2m_sde'
             gen_vid = self.diffusion.sample(
                 noise=noised_lr,
                 model=self.generator,
@@ -149,7 +149,7 @@ class VideoToVideo():
             vid_tensor_gen, '(b f) c h w -> b c f h w', b=bs)
 
         torch.cuda.empty_cache()
-        
+
         return gen_video.type(torch.float32).cpu()
 
     def temporal_vae_decode(self, z, num_f):
@@ -182,7 +182,7 @@ def pad_to_fit(h, w):
         h1, h2 = _create_pad(h, BEST_H)
     elif h == BEST_H:
         h1 = h2 = 0
-    else: 
+    else:
         h1 = 0
         h2 = int((h + 48) // 64 * 64) + 64 - 48 - h
 
@@ -220,5 +220,5 @@ def sliding_windows_1d(length, window_size, overlap_size):
             break
         else:
             coords.append((ind,ind+window_size))
-            ind += stride  
+            ind += stride
     return coords
