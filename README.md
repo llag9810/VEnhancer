@@ -75,29 +75,42 @@
 
 </div>
 
+## Open Source Plan
 
+- [ ] Release code of Multiple GPU Inference.
+- [ ] Release code of tiled VAE.
+- [ ] Release model that optimized for better idenity preservation.
+
+:star::star::star: Star us :star::star::star:! And we will speed up the open-sourcing process :heart:.
 
 ## 🔥🔥 News
-- [2024.08.23] We have enhanced T2V results from [keling](https://kling.kuaishou.com)🤗. (The used VEnhancer checkpoint is the released one 🤗.) 
+
+- [2024.08.23] We have enhanced T2V results from [Open-Sora](https://github.com/hpcaitech/Open-Sora) 🤗. 
 <div align="center">
-  <video src="https://github.com/user-attachments/assets/39a39459-4a69-4ef7-80ef-74df066decb5" width="80%" controls autoplay></video>
-  <video src="https://github.com/user-attachments/assets/d110bec4-9ea1-4348-a6db-e9dd6cce4bc2" width="80%" controls autoplay></video>
-  <p>A little brick man visiting an art gallery.</p>
+  <p>a close-up shot of a woman standing in a dimly lit room. she is wearing a traditional chinese outfit, which includes a red and gold dress with intricate designs and a matching headpiece.</p>
+  <video src="https://github.com/user-attachments/assets/4a514853-65f6-40b8-8b5d-d14835bb9297" width="80%" controls autoplay></video>
 </div>
 
 
-- [2024.08.19] We have enhanced some T2V results from [CogVideoX](https://github.com/THUDM/CogVideo)🤗. (The used VEnhancer checkpoint is not the released one :cold_sweat:.) 
-
-Short captions (less than three sentences) are more suitable for VEnhancer. Please shorten the long captions when you are using VEnhancer.
+- [2024.08.23] We have enhanced T2V results from [keling](https://kling.kuaishou.com/en) 🤗. 
 <div align="center">
+  <p>A little brick man visiting an art gallery.</p>
+  <video src="https://github.com/user-attachments/assets/39a39459-4a69-4ef7-80ef-74df066decb5" width="80%" controls autoplay></video>
+  <video src="https://github.com/user-attachments/assets/d110bec4-9ea1-4348-a6db-e9dd6cce4bc2" width="80%" controls autoplay></video>
+</div>
+
+
+- [2024.08.19] We have enhanced some T2V results from [CogVideoX](https://github.com/THUDM/CogVideo) 🤗.
+
+<div align="center">
+  <p>A detailed wooden toy ship with intricately carved masts and sails is seen gliding smoothly over a plush, blue carpet that mimics the waves of the sea. </p>
   <video src="https://github.com/user-attachments/assets/d6ba4ebe-a970-4db1-ade1-03bfa8e52a20" width="80%" controls autoplay></video>
   <video src="https://github.com/user-attachments/assets/bf97116e-2fbc-4e29-b559-4fe08dc65c02" width="80%" controls autoplay></video>
-  <p>A detailed wooden toy ship with intricately carved masts and sails is seen gliding smoothly over a plush, blue carpet that mimics the waves of the sea. The ship's hull is painted a rich brown, with tiny windows. The carpet, soft and textured, provides a perfect backdrop, resembling an oceanic expanse. Surrounding the ship are various other toys and children's items, hinting at a playful environment. The scene captures the innocence and imagination of childhood, with the toy ship's journey symbolizing endless adventures in a whimsical, indoor setting.</p>
 </div>
 
 
 ## 🔥 Update
-- [2024.08.18] 😸 Support enhancement for **abitrary long videos** (by spliting the videos into muliple chunks with overlaps); Faster sampling with only 15 steps without obvious quality loss (by setting `--solver_mode 'fast'` in the script command); Use **temporal VAE** to reduce video flickering.
+- [2024.08.18] 😸 Support enhancement for **abitrary long videos** (by spliting the videos into muliple chunks with overlaps); **Faster sampling** with only 15 steps without obvious quality loss (by setting `--solver_mode 'fast'` in the script command); Use **temporal VAE** to reduce video flickering.
 - [2024.07.28] 🔥 Inference code and pretrained video enhancement model are released.
 - [2024.07.10] 🤗 This repo is created.
 
@@ -140,7 +153,8 @@ sudo apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
   bash run_VEnhancer.sh
 ```
 In `run_VEnhancer.sh`, 
-- `up_scale` is the upsampling factor ($1\sim8$) for spatial super-resolution. $\times2,3,4$ are recommended.
+- `prompt` is the text prompt. Short prompts (e.g., one or two sentences) are more suitable for VEnhancer.
+- `up_scale` is the upsampling factor ($1\sim8$) for spatial super-resolution. $\times3,4$ are recommended. 
 - `target_fps` is your expected target fps. default is 24. 
 - `noise_aug` is the noise level ($0\sim300$) regarding noise augmentation. higher noise corresponds to stronger refinement.
 
