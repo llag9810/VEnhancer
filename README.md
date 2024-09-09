@@ -16,13 +16,13 @@
 <div>
 </div>
 <div>
-    The Chinese University of Hong Kong,&emsp;Shanghai Artificial Intelligence Laboratory,&emsp; 
+    The Chinese University of Hong Kong,&emsp;Shanghai Artificial Intelligence Laboratory,&emsp;
 </div>
 <div>
-    
+
 </div>
 <div>
- S-Lab, Nanyang Technological University&emsp; 
+ S-Lab, Nanyang Technological University&emsp;
 </div>
 
 <div>
@@ -64,7 +64,7 @@
   </td>
   </tr>
 
-  
+
 
 </table>
 
@@ -85,14 +85,14 @@
 
 ## 🔥🔥 News
 
-- [2024.09.02] We have enhanced T2V results from [Open-Sora](https://github.com/hpcaitech/Open-Sora) 🤗. 
+- [2024.09.02] We have enhanced T2V results from [Open-Sora](https://github.com/hpcaitech/Open-Sora) 🤗.
 <div align="center">
   <p>Prompt: a close-up shot of a woman standing in a dimly lit room. she is wearing a traditional chinese outfit, which includes a red and gold dress with intricate designs and a matching headpiece.</p>
   <video src="https://github.com/user-attachments/assets/4a514853-65f6-40b8-8b5d-d14835bb9297" width="80%" controls autoplay></video>
 </div>
 
 
-- [2024.08.23] We have enhanced T2V results from [keling](https://kling.kuaishou.com/en) 🤗. 
+- [2024.08.23] We have enhanced T2V results from [keling](https://kling.kuaishou.com/en) 🤗.
 <div align="center">
   <p>Prompt: A little brick man visiting an art gallery.</p>
   <video src="https://github.com/user-attachments/assets/39a39459-4a69-4ef7-80ef-74df066decb5" width="80%" controls autoplay></video>
@@ -116,11 +116,11 @@
 
 ## 🎬 Overview
 VEnhancer achieves spatial super-resolution, temporal super-resolution (frame interpolation), and video refinement in a **unified framework**.
-It is flexible to adapt to different upsampling factors (e.g., 1x~8x) for either spatial or temporal super-resolution. Besides, it provides flexible control to modify the refinement strength for handling diversified video artifacts. 
+It is flexible to adapt to different upsampling factors (e.g., 1x~8x) for either spatial or temporal super-resolution. Besides, it provides flexible control to modify the refinement strength for handling diversified video artifacts.
 
-It follows ControlNet and copies the architecures and weights of multi-frame encoder and middle block of a pretrained video diffusion model to build a trainable condition network. 
-This **video ControlNet** accepts both low-resolution key frames and full frames of noisy latents as inputs. 
-Also, the noise level $\sigma$ regarding noise augmentation and downscaling factor $s$ serve as additional network conditioning through our proposed **video-aware conditioning** apart from timestep $t$ and prompt $c_{text}$. 
+It follows ControlNet and copies the architecures and weights of multi-frame encoder and middle block of a pretrained video diffusion model to build a trainable condition network.
+This **video ControlNet** accepts both low-resolution key frames and full frames of noisy latents as inputs.
+Also, the noise level $\sigma$ regarding noise augmentation and downscaling factor $s$ serve as additional network conditioning through our proposed **video-aware conditioning** apart from timestep $t$ and prompt $c_{text}$.
 <!-- ![overall_structure](assets/venhancer_arch.png) -->
 
 
@@ -143,19 +143,19 @@ sudo apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 
 ## :dna: Pretrained Models
 | Model Name | Description | HuggingFace | BaiduNetdisk  |
-| :---------: | :----------: | :----------: | :----------: | 
+| :---------: | :----------: | :----------: | :----------: |
 | venhancer_paper.pth  | video enhancement model, paper version | [download](https://huggingface.co/jwhejwhe/VEnhancer/resolve/main/venhancer_paper.pt) | [download](https://pan.baidu.com/s/15t20RGvEHqJOMmhA_zRLiA?pwd=cpsd)|
 
-## 💫 Inference 
+## 💫 Inference
 1) Download the VEnhancer model and then put the checkpoint in the `VEnhancer/ckpts` directory. (optional as it can be done automatically)
 2) run the following command.
 ```bash
   bash run_VEnhancer.sh
 ```
-In `run_VEnhancer.sh`, 
+In `run_VEnhancer.sh`,
 - `prompt` is the text prompt. Short prompts (e.g., one or two sentences) are more suitable for VEnhancer.
-- `up_scale` is the upsampling factor ($1\sim8$) for spatial super-resolution. $\times3,4$ are recommended. 
-- `target_fps` is your expected target fps. default is 24. 
+- `up_scale` is the upsampling factor ($1\sim8$) for spatial super-resolution. $\times3,4$ are recommended.
+- `target_fps` is your expected target fps. default is 24.
 - `noise_aug` is the noise level ($0\sim300$) regarding noise augmentation. higher noise corresponds to stronger refinement.
 
 ### Gradio
@@ -177,8 +177,8 @@ If you use our work in your research, please cite our publication:
 ```
 
 ## 🤗 Acknowledgements
-Our codebase builds on [modelscope](https://github.com/modelscope/modelscope). 
-Thanks the authors for sharing their awesome codebases! 
+Our codebase builds on [modelscope](https://github.com/modelscope/modelscope).
+Thanks the authors for sharing their awesome codebases!
 
 ## 📧 Contact
 If you have any questions, please feel free to reach us at `hejingwenhejingwen@outlook.com`.

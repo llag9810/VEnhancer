@@ -1,13 +1,15 @@
 import os
 import subprocess
 import tempfile
-import cv2
-import torch
-from PIL import Image
 from typing import Mapping
+
+from PIL import Image
+import cv2
 from einops import rearrange
 import numpy as np
+import torch
 import torchvision.transforms.functional as transforms_F
+
 from video_to_video.utils.logger import get_logger
 
 logger = get_logger()
@@ -19,7 +21,7 @@ def tensor2vid(video, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]):
     video = video.mul_(std).add_(mean)
     video.clamp_(0, 1)
     video = video * 255.0
-    images = rearrange(video, 'b c f h w -> b f h w c')[0]
+    images = rearrange(video, "b c f h w -> b f h w c")[0]
     return images
 
 
@@ -28,7 +30,7 @@ def preprocess(input_frames):
     for pointer in range(len(input_frames)):
         frame = input_frames[pointer]
         frame = frame[:, :, ::-1]
-        frame = Image.fromarray(frame.astype('uint8')).convert('RGB')
+        frame = Image.fromarray(frame.astype("uint8")).convert("RGB")
         frame = transforms_F.to_tensor(frame)
         out_frame_list.append(frame)
     out_frames = torch.stack(out_frame_list, dim=0)
@@ -40,17 +42,17 @@ def preprocess(input_frames):
 
 
 def adjust_resolution(h, w, up_scale):
-    if h*up_scale < 720:
-        up_s = 720/h
-        target_h = int(up_s*h//2*2)
-        target_w = int(up_s*w//2*2)
-    elif h*w*up_scale*up_scale > 1280*2048:
-        up_s = np.sqrt(1280*2048/(h*w))
-        target_h = int(up_s*h//2*2)
-        target_w = int(up_s*w//2*2)
+    if h * up_scale < 720:
+        up_s = 720 / h
+        target_h = int(up_s * h // 2 * 2)
+        target_w = int(up_s * w // 2 * 2)
+    elif h * w * up_scale * up_scale > 1280 * 2048:
+        up_s = np.sqrt(1280 * 2048 / (h * w))
+        target_h = int(up_s * h // 2 * 2)
+        target_w = int(up_s * w // 2 * 2)
     else:
-        target_h = int(up_scale*h//2*2)
-        target_w = int(up_scale*w//2*2)
+        target_h = int(up_scale * h // 2 * 2)
+        target_w = int(up_scale * w // 2 * 2)
     return (target_h, target_w)
 
 
@@ -86,18 +88,18 @@ def load_video(vid_path):
 
 def save_video(video, save_dir, file_name, fps=16.0):
     output_path = os.path.join(save_dir, file_name)
-    images = [(img.numpy()).astype('uint8') for img in video]
+    images = [(img.numpy()).astype("uint8") for img in video]
     temp_dir = tempfile.mkdtemp()
     for fid, frame in enumerate(images):
-        tpth = os.path.join(temp_dir, '%06d.png' % (fid + 1))
+        tpth = os.path.join(temp_dir, "%06d.png" % (fid + 1))
         cv2.imwrite(tpth, frame[:, :, ::-1])
-    tmp_path = os.path.join(save_dir, 'tmp.mp4')
-    cmd = f'ffmpeg -y -f image2 -framerate {fps} -i {temp_dir}/%06d.png \
-     -vcodec libx264 -crf 17 -pix_fmt yuv420p {tmp_path}'
+    tmp_path = os.path.join(save_dir, "tmp.mp4")
+    cmd = f"ffmpeg -y -f image2 -framerate {fps} -i {temp_dir}/%06d.png \
+     -vcodec libx264 -crf 17 -pix_fmt yuv420p {tmp_path}"
     status, output = subprocess.getstatusoutput(cmd)
     if status != 0:
-        logger.error('Save Video Error with {}'.format(output))
-    os.system(f'rm -rf {temp_dir}')
+        logger.error("Save Video Error with {}".format(output))
+    os.system(f"rm -rf {temp_dir}")
     os.rename(tmp_path, output_path)
 
 
@@ -119,10 +121,7 @@ def collate_fn(data, device):
         return obj.__class__.__name__
 
     if isinstance(data, dict) or isinstance(data, Mapping):
-        return type(data)({
-            k: collate_fn(v, device) if k != 'img_metas' else v
-            for k, v in data.items()
-        })
+        return type(data)({k: collate_fn(v, device) if k != "img_metas" else v for k, v in data.items()})
     elif isinstance(data, (tuple, list)):
         if 0 == len(data):
             return torch.Tensor([])
@@ -140,4 +139,4 @@ def collate_fn(data, device):
     elif isinstance(data, (bytes, str, int, float, bool, type(None))):
         return data
     else:
-        raise ValueError(f'Unsupported data type {type(data)}')
+        raise ValueError(f"Unsupported data type {type(data)}")

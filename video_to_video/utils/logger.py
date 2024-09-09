@@ -3,18 +3,16 @@
 import importlib
 import logging
 from typing import Optional
+
 from torch import distributed as dist
 
 init_loggers = {}
 
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
-def get_logger(log_file: Optional[str] = None,
-               log_level: int = logging.INFO,
-               file_mode: str = 'w'):
-    """ Get logging logger
+def get_logger(log_file: Optional[str] = None, log_level: int = logging.INFO, file_mode: str = "w"):
+    """Get logging logger
 
     Args:
         log_file: Log filename, if specified, file handler will be added to
@@ -24,7 +22,7 @@ def get_logger(log_file: Optional[str] = None,
             specified (if filemode is unspecified, it defaults to 'w').
     """
 
-    logger_name = __name__.split('.')[0]
+    logger_name = __name__.split(".")[0]
     logger = logging.getLogger(logger_name)
     logger.propagate = False
     if logger_name in init_loggers:
@@ -45,7 +43,7 @@ def get_logger(log_file: Optional[str] = None,
     stream_handler = logging.StreamHandler()
     handlers = [stream_handler]
 
-    if importlib.util.find_spec('torch') is not None:
+    if importlib.util.find_spec("torch") is not None:
         is_worker0 = is_master()
     else:
         is_worker0 = True
@@ -74,7 +72,7 @@ def add_file_handler_if_needed(logger, log_file, file_mode, log_level):
         if isinstance(handler, logging.FileHandler):
             return
 
-    if importlib.util.find_spec('torch') is not None:
+    if importlib.util.find_spec("torch") is not None:
         is_worker0 = is_master()
     else:
         is_worker0 = True

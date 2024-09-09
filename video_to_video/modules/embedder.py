@@ -13,18 +13,21 @@ class FrozenOpenCLIPEmbedder(nn.Module):
     """
     Uses the OpenCLIP transformer encoder for text
     """
-    LAYERS = ['last', 'penultimate']
 
-    def __init__(self,
-                 pretrained='laion2b_s32b_b79k',
-                 arch='ViT-H-14',
-                 device='cuda',
-                 max_length=77,
-                 freeze=True,
-                 layer='penultimate'):
+    LAYERS = ["last", "penultimate"]
+
+    def __init__(
+        self,
+        pretrained="laion2b_s32b_b79k",
+        arch="ViT-H-14",
+        device="cuda",
+        max_length=77,
+        freeze=True,
+        layer="penultimate",
+    ):
         super().__init__()
         assert layer in self.LAYERS
-        model, _, _ = open_clip.create_model_and_transforms(arch, device=torch.device('cpu'), pretrained=pretrained)
+        model, _, _ = open_clip.create_model_and_transforms(arch, device=torch.device("cpu"), pretrained=pretrained)
 
         del model.visual
         self.model = model
@@ -34,9 +37,9 @@ class FrozenOpenCLIPEmbedder(nn.Module):
         if freeze:
             self.freeze()
         self.layer = layer
-        if self.layer == 'last':
+        if self.layer == "last":
             self.layer_idx = 0
-        elif self.layer == 'penultimate':
+        elif self.layer == "penultimate":
             self.layer_idx = 1
         else:
             raise NotImplementedError()
@@ -64,8 +67,7 @@ class FrozenOpenCLIPEmbedder(nn.Module):
         for i, r in enumerate(self.model.transformer.resblocks):
             if i == len(self.model.transformer.resblocks) - self.layer_idx:
                 break
-            if self.model.transformer.grad_checkpointing and not torch.jit.is_scripting(
-            ):
+            if self.model.transformer.grad_checkpointing and not torch.jit.is_scripting():
                 x = checkpoint(r, x, attn_mask)
             else:
                 x = r(x, attn_mask=attn_mask)

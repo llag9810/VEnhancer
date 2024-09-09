@@ -11,8 +11,7 @@ def betas_to_sigmas(betas):
 
 def sigmas_to_betas(sigmas):
     square_alphas = 1 - sigmas**2
-    betas = 1 - torch.cat(
-        [square_alphas[:1], square_alphas[1:] / square_alphas[:-1]])
+    betas = 1 - torch.cat([square_alphas[:1], square_alphas[1:] / square_alphas[:-1]])
     return betas
 
 
@@ -39,11 +38,7 @@ def _logsnr_cosine_shifted(n, logsnr_min=-15, logsnr_max=15, scale=2):
     return logsnrs
 
 
-def _logsnr_cosine_interp(n,
-                          logsnr_min=-15,
-                          logsnr_max=15,
-                          scale_min=2,
-                          scale_max=4):
+def _logsnr_cosine_interp(n, logsnr_min=-15, logsnr_max=15, scale_min=2, scale_max=4):
     t = torch.linspace(1, 0, n)
     logsnrs_min = _logsnr_cosine_shifted(n, logsnr_min, logsnr_max, scale_min)
     logsnrs_max = _logsnr_cosine_shifted(n, logsnr_min, logsnr_max, scale_max)
@@ -53,30 +48,20 @@ def _logsnr_cosine_interp(n,
 
 def karras_schedule(n, sigma_min=0.002, sigma_max=80.0, rho=7.0):
     ramp = torch.linspace(1, 0, n)
-    min_inv_rho = sigma_min**(1 / rho)
-    max_inv_rho = sigma_max**(1 / rho)
-    sigmas = (max_inv_rho + ramp * (min_inv_rho - max_inv_rho))**rho
+    min_inv_rho = sigma_min ** (1 / rho)
+    max_inv_rho = sigma_max ** (1 / rho)
+    sigmas = (max_inv_rho + ramp * (min_inv_rho - max_inv_rho)) ** rho
     sigmas = torch.sqrt(sigmas**2 / (1 + sigmas**2))
     return sigmas
 
 
-def logsnr_cosine_interp_schedule(n,
-                                  logsnr_min=-15,
-                                  logsnr_max=15,
-                                  scale_min=2,
-                                  scale_max=4):
-    return logsnrs_to_sigmas(
-        _logsnr_cosine_interp(n, logsnr_min, logsnr_max, scale_min, scale_max))
+def logsnr_cosine_interp_schedule(n, logsnr_min=-15, logsnr_max=15, scale_min=2, scale_max=4):
+    return logsnrs_to_sigmas(_logsnr_cosine_interp(n, logsnr_min, logsnr_max, scale_min, scale_max))
 
 
-def noise_schedule(schedule='logsnr_cosine_interp',
-                   n=1000,
-                   zero_terminal_snr=False,
-                   **kwargs):
+def noise_schedule(schedule="logsnr_cosine_interp", n=1000, zero_terminal_snr=False, **kwargs):
     # compute sigmas
-    sigmas = {
-        'logsnr_cosine_interp': logsnr_cosine_interp_schedule
-    }[schedule](n, **kwargs)
+    sigmas = {"logsnr_cosine_interp": logsnr_cosine_interp_schedule}[schedule](n, **kwargs)
 
     # post-processing
     if zero_terminal_snr and sigmas.max() != 1.0:

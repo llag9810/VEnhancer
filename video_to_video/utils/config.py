@@ -1,17 +1,17 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+from datetime import datetime
 import logging
 import os
 import os.path as osp
-from datetime import datetime
 
-import torch
 from easydict import EasyDict
+import torch
 
-cfg = EasyDict(__name__='Config: VideoLDM Decoder')
+cfg = EasyDict(__name__="Config: VideoLDM Decoder")
 
 # ---------------------------work dir--------------------------
-cfg.work_dir = 'workspace/'
+cfg.work_dir = "workspace/"
 
 # ---------------------------Global Variable-----------------------------------
 cfg.resolution = [448, 256]
@@ -38,11 +38,11 @@ cfg.batch_sizes = 1
 
 # ---------------------------Mode Parameters-----------------------------------
 # Diffusion
-cfg.schedule = 'cosine'
+cfg.schedule = "cosine"
 cfg.num_timesteps = 1000
-cfg.mean_type = 'v'
-cfg.var_type = 'fixed_small'
-cfg.loss_type = 'mse'
+cfg.mean_type = "v"
+cfg.var_type = "fixed_small"
+cfg.loss_type = "mse"
 cfg.ddim_timesteps = 50
 cfg.ddim_eta = 0.0
 cfg.clamp = 1.0
@@ -65,54 +65,54 @@ cfg.temporal_attention = True
 cfg.decoder_bs = 8
 
 cfg.UNet = {
-    'type': 'Vid2VidSDUNet',
-    'in_dim': 4,
-    'dim': 320,
-    'y_dim': cfg.vit_out_dim,
-    'context_dim': 1024,
-    'out_dim': 8 if cfg.var_type.startswith('learned') else 4,
-    'dim_mult': [1, 2, 4, 4],
-    'num_heads': 8,
-    'head_dim': 64,
-    'num_res_blocks': 2,
-    'attn_scales': [1 / 1, 1 / 2, 1 / 4],
-    'dropout': 0.1,
-    'temporal_attention': cfg.temporal_attention,
-    'temporal_attn_times': 1,
-    'use_checkpoint': False,
-    'use_fps_condition': False,
-    'use_sim_mask': False,
-    'num_tokens': 4,
-    'default_fps': 8,
-    'input_dim': 1024
+    "type": "Vid2VidSDUNet",
+    "in_dim": 4,
+    "dim": 320,
+    "y_dim": cfg.vit_out_dim,
+    "context_dim": 1024,
+    "out_dim": 8 if cfg.var_type.startswith("learned") else 4,
+    "dim_mult": [1, 2, 4, 4],
+    "num_heads": 8,
+    "head_dim": 64,
+    "num_res_blocks": 2,
+    "attn_scales": [1 / 1, 1 / 2, 1 / 4],
+    "dropout": 0.1,
+    "temporal_attention": cfg.temporal_attention,
+    "temporal_attn_times": 1,
+    "use_checkpoint": False,
+    "use_fps_condition": False,
+    "use_sim_mask": False,
+    "num_tokens": 4,
+    "default_fps": 8,
+    "input_dim": 1024,
 }
 
 cfg.guidances = []
 
 # auotoencoder from stabel diffusion
 cfg.auto_encoder = {
-    'type': 'AutoencoderKL',
-    'ddconfig': {
-        'double_z': True,
-        'z_channels': 4,
-        'resolution': 256,
-        'in_channels': 3,
-        'out_ch': 3,
-        'ch': 128,
-        'ch_mult': [1, 2, 4, 4],
-        'num_res_blocks': 2,
-        'attn_resolutions': [],
-        'dropout': 0.0
+    "type": "AutoencoderKL",
+    "ddconfig": {
+        "double_z": True,
+        "z_channels": 4,
+        "resolution": 256,
+        "in_channels": 3,
+        "out_ch": 3,
+        "ch": 128,
+        "ch_mult": [1, 2, 4, 4],
+        "num_res_blocks": 2,
+        "attn_resolutions": [],
+        "dropout": 0.0,
     },
-    'embed_dim': 4,
-    'pretrained': 'models/v2-1_512-ema-pruned.ckpt'
+    "embed_dim": 4,
+    "pretrained": "models/v2-1_512-ema-pruned.ckpt",
 }
 # clip embedder
 cfg.embedder = {
-    'type': 'FrozenOpenCLIPEmbedder',
-    'layer': 'penultimate',
-    'vit_resolution': [224, 224],
-    'pretrained': 'open_clip_pytorch_model.bin'
+    "type": "FrozenOpenCLIPEmbedder",
+    "layer": "penultimate",
+    "vit_resolution": [224, 224],
+    "pretrained": "open_clip_pytorch_model.bin",
 }
 # -----------------------------------------------------------------------------
 
@@ -133,37 +133,37 @@ cfg.save_ckp_interval = 1000
 # Default: load 2d pretrain
 cfg.fix_weight = False
 cfg.load_match = False
-cfg.pretrained_checkpoint = 'v2-1_512-ema-pruned.ckpt'
-cfg.pretrained_image_keys = 'stable_diffusion_image_key_temporal_attention_x1.json'
-cfg.resume_checkpoint = 'img2video_ldm_0779000.pth'
+cfg.pretrained_checkpoint = "v2-1_512-ema-pruned.ckpt"
+cfg.pretrained_image_keys = "stable_diffusion_image_key_temporal_attention_x1.json"
+cfg.resume_checkpoint = "img2video_ldm_0779000.pth"
 # -----------------------------------------------------------------------------
 
 # -----------------------------Visual-------------------------------------------
 # Visual videos
 cfg.viz_interval = 1000
 cfg.visual_train = {
-    'type': 'VisualVideoTextDuringTrain',
+    "type": "VisualVideoTextDuringTrain",
 }
 cfg.visual_inference = {
-    'type': 'VisualGeneratedVideos',
+    "type": "VisualGeneratedVideos",
 }
-cfg.inference_list_path = ''
+cfg.inference_list_path = ""
 
 # logging
 cfg.log_interval = 100
 
 # Default log_dir
-cfg.log_dir = 'workspace/output_data'
+cfg.log_dir = "workspace/output_data"
 # -----------------------------------------------------------------------------
 
 # ---------------------------Others--------------------------------------------
 # seed
 cfg.seed = 8888
 
-cfg.negative_prompt = 'painting, oil painting, illustration, drawing, art, sketch, oil painting, cartoon, \
+cfg.negative_prompt = "painting, oil painting, illustration, drawing, art, sketch, oil painting, cartoon, \
 CG Style, 3D render, unreal engine, blurring, dirty, messy, worst quality, low quality, frames, watermark, \
-signature, jpeg artifacts, deformed, lowres, over-smooth'
+signature, jpeg artifacts, deformed, lowres, over-smooth"
 
-cfg.positive_prompt = 'Cinematic, High Contrast, highly detailed, taken using a Canon EOS R camera,   \
+cfg.positive_prompt = "Cinematic, High Contrast, highly detailed, taken using a Canon EOS R camera,   \
 hyper detailed photo - realistic maximum detail, 32k, Color Grading, ultra HD, extreme meticulous detailing,  \
-skin pore detailing, hyper sharpness, perfect without deformations.'
+skin pore detailing, hyper sharpness, perfect without deformations."

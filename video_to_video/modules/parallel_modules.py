@@ -1,12 +1,11 @@
+import logging
 from typing import Any
 
 import torch
-from torch import Tensor
-from torch import nn
+from torch import Tensor, nn
 import torch.distributed as dist
-import logging
 
-from ..context_parallel import get_context_parallel_rank, get_context_parallel_world_size, get_context_parallel_group
+from ..context_parallel import get_context_parallel_group, get_context_parallel_rank, get_context_parallel_world_size
 
 logger = logging.getLogger(__name__)
 
@@ -20,42 +19,26 @@ class ContextParallelConv3d(nn.Conv3d):
     def forward(self, x: Tensor) -> Tensor:
         pad_num = self.f_padding
 
-        cp_rank, cp_size, cp_group = get_context_parallel_rank(), get_context_parallel_world_size(), get_context_parallel_group()
+        cp_rank, cp_size, cp_group = (
+            get_context_parallel_rank(),
+            get_context_parallel_world_size(),
+            get_context_parallel_group(),
+        )
         # first, pad from the temporal 'former' side
         if cp_rank != cp_size - 1:
-            dist.isend(
-                x[:, :, -pad_num:].contiguous(),
-                cp_rank + 1,
-                group=cp_group,
-                tag=100
-            )
+            dist.isend(x[:, :, -pad_num:].contiguous(), cp_rank + 1, group=cp_group, tag=100)
         if cp_rank != 0:
             former_padding = torch.empty_like(x[:, :, -pad_num:]).contiguous()
-            dist.recv(
-                former_padding,
-                cp_rank - 1,
-                cp_group,
-                tag=100
-            )
+            dist.recv(former_padding, cp_rank - 1, cp_group, tag=100)
         else:
             former_padding = None
 
         # then, pad from the temporal 'later' side
         if cp_rank != 0:
-            dist.isend(
-                x[:, :, :pad_num].contiguous(),
-                cp_rank - 1,
-                group=cp_group,
-                tag=101
-            )
+            dist.isend(x[:, :, :pad_num].contiguous(), cp_rank - 1, group=cp_group, tag=101)
         if cp_rank != cp_size - 1:
-             later_padding = torch.empty_like(x[:, :, :pad_num]).contiguous()
-             dist.recv(
-                later_padding,
-                cp_rank + 1,
-                cp_group,
-                tag=101
-            )
+            later_padding = torch.empty_like(x[:, :, :pad_num]).contiguous()
+            dist.recv(later_padding, cp_rank + 1, cp_group, tag=101)
         else:
             later_padding = None
 
@@ -76,14 +59,18 @@ class ContextParallelConv3d(nn.Conv3d):
 class ContextParallelGroupNorm(nn.GroupNorm):
     def forward(self, x: Tensor) -> Tensor:
 
-        cp_rank, cp_size, cp_group = get_context_parallel_rank(), get_context_parallel_world_size(), get_context_parallel_group()
+        cp_rank, cp_size, cp_group = (
+            get_context_parallel_rank(),
+            get_context_parallel_world_size(),
+            get_context_parallel_group(),
+        )
 
         b, c, f_shard, h, w = x.shape
         # f_shard may be different on the last rank and on the others because f_total % cp_world_size != 0
         f_total = torch.tensor(f_shard, device="cuda")
         dist.all_reduce(f_total)
         f_total = f_total.item()  #
-        x = x.view(b, self.num_groups, c//self.num_groups, f_shard, h, w)
+        x = x.view(b, self.num_groups, c // self.num_groups, f_shard, h, w)
         mean = torch.mean(x, dim=[2, 3, 4, 5], keepdim=True) * f_shard / f_total
 
         dist.all_reduce(mean, group=cp_group)
@@ -114,7 +101,6 @@ class _AllToAllFunction(torch.autograd.Function):
             pad_gather_channels = (real_gather_channels // world_size + 1) * world_size - real_gather_channels
         else:
             pad_gather_channels = 0
-
 
         if input_.size(scatter_dim) % world_size != 0:
             pad_scatter_channels = (input_.size(scatter_dim) // world_size + 1) * world_size - input_.size(scatter_dim)
@@ -153,6 +139,7 @@ class _AllToAllFunction(torch.autograd.Function):
     @staticmethod
     def backward(ctx: Any, grad_output: torch.Tensor):
         raise NotImplementedError
+
 
 def all_to_all(input_: torch.Tensor, gather_dim: int, scatter_dim: int, group: Any) -> torch.Tensor:
     return _AllToAllFunction.apply(input_, gather_dim, scatter_dim, group)
