@@ -1,4 +1,5 @@
 from argparse import ArgumentParser, Namespace
+import glob
 
 from easydict import EasyDict
 from huggingface_hub import hf_hub_download
@@ -14,9 +15,9 @@ class VEnhancer:
     def __init__(self, result_dir="./results/", model_path="", solver_mode="fast", steps=15, guide_scale=7.5, s_cond=8):
         if not model_path:
             self.download_model()
-            assert os.path.exists(self.model_path), "Error: checkpoint Not Found!"
         else:
             self.model_path = model_path
+        assert os.path.exists(self.model_path), "Error: checkpoint Not Found!"
         logger.info(f"checkpoint_path: {self.model_path}")
 
         self.result_dir = result_dir
@@ -34,7 +35,7 @@ class VEnhancer:
 
     def enhance_a_video(self, video_path, prompt, up_scale=4, target_fps=24, noise_aug=300):
 
-        logger.info(f"input video path: {video_path}")
+        save_name = os.path.splitext(os.path.basename(video_path))[0]
         text = prompt
         logger.info(f"text: {text}")
         caption = text + self.model.positive_prompt
@@ -72,7 +73,7 @@ class VEnhancer:
         setup_seed(666)
 
         with torch.no_grad():
-            data_tensor = collate_fn(pre_data, "cuda")
+            data_tensor = collate_fn(pre_data, "cuda:0")
             output = self.model.test(
                 data_tensor,
                 total_noise_levels,
@@ -83,9 +84,8 @@ class VEnhancer:
             )
 
         output = tensor2vid(output)
-        file_name = f"{text}.mp4"
-        save_video(output, self.result_dir, file_name, fps=target_fps)
-        return os.path.join(self.result_dir, file_name)
+        save_video(output, self.result_dir, f"{save_name}.mp4", fps=target_fps)
+        return os.path.join(self.result_dir, save_name)
 
     def download_model(self):
         REPO_ID = "jwhejwhe/VEnhancer"
@@ -106,6 +106,8 @@ def parse_args() -> Namespace:
     parser.add_argument("--save_dir", type=str, default="results", help="save directory")
     parser.add_argument("--model_path", type=str, default="", help="model path")
     parser.add_argument("--prompt", type=str, default="a good video", help="prompt")
+    parser.add_argument("--prompt_path", type=str, default="", help="prompt path")
+    parser.add_argument("--filename_as_prompt", action="store_true")
 
     parser.add_argument("--cfg", type=float, default=7.5)
     parser.add_argument("--solver_mode", type=str, default="fast", help="fast | normal")
@@ -125,6 +127,8 @@ def main():
 
     input_path = args.input_path
     prompt = args.prompt
+    prompt_path = args.prompt_path
+    filename_as_prompt = args.filename_as_prompt
     model_path = args.model_path
     save_dir = args.save_dir
 
@@ -148,7 +152,30 @@ def main():
         s_cond=s_cond,
     )
 
-    venhancer.enhance_a_video(input_path, prompt, up_scale, target_fps, noise_aug)
+    if os.path.isdir(input_path):
+        file_path_list = sorted(glob.glob(os.path.join(input_path, "*.mp4")))
+    elif os.path.isfile(input_path):
+        file_path_list = [input_path]
+    else:
+        raise TypeError("input must be a directory or video file!")
+
+    prompt_list = None
+    if os.path.isfile(prompt_path):
+        prompt_list = load_prompt_list(prompt_path)
+        assert len(prompt_list) == len(file_path_list)
+
+    for ind, file_path in enumerate(file_path_list):
+        logger.info(f"processing video {ind}, file_path: {file_path}")
+        if filename_as_prompt:
+            prompt = os.path.splitext(os.path.basename(file_path))[0]
+        elif prompt_list is not None:
+            prompt = prompt_list[ind]
+        else:
+            prompt_path = os.path.splitext(file_path)[0] + ".txt"
+            if os.path.isfile(prompt_path):
+                logger.info(f"prompt_path: {prompt_path}")
+                prompt = load_prompt_list(prompt_path)[0]
+        venhancer.enhance_a_video(file_path, prompt, up_scale, target_fps, noise_aug)
 
 
 if __name__ == "__main__":

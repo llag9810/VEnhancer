@@ -75,11 +75,18 @@
 
 </div>
 
+
+## 🔥 Update
+- [2024.09.10] 😸 Support **Multiple GPU Inference** and **tiled VAE** for temporal VAE decoding. And more stable performance for long video enhancement.
+- [2024.08.18] 😸 Support enhancement for **abitrary long videos** (by spliting the videos into muliple chunks with overlaps); **Faster sampling** with only 15 steps without obvious quality loss (by setting `--solver_mode 'fast'` in the script command); Use **temporal VAE** to reduce video flickering.
+- [2024.07.28] 🔥 Inference code and pretrained video enhancement model are released.
+- [2024.07.10] 🤗 This repo is created.
+
 ## Open Source Plan
 
-- [ ] Release code of Multiple GPU Inference.
-- [ ] Release code of tiled VAE.
-- [ ] Release model that optimized for better idenity preservation.
+- [x] Release code of Multiple GPU Inference.
+- [x] Release code of tiled VAE.
+- [ ] Release model that is optimized for better idenity preservation.
 
 :star::star::star: Star us :star::star::star:! And we will speed up the open-sourcing process :heart:.
 
@@ -109,13 +116,8 @@
 </div>
 
 
-## 🔥 Update
-- [2024.08.18] 😸 Support enhancement for **abitrary long videos** (by spliting the videos into muliple chunks with overlaps); **Faster sampling** with only 15 steps without obvious quality loss (by setting `--solver_mode 'fast'` in the script command); Use **temporal VAE** to reduce video flickering.
-- [2024.07.28] 🔥 Inference code and pretrained video enhancement model are released.
-- [2024.07.10] 🤗 This repo is created.
-
 ## 🎬 Overview
-VEnhancer achieves spatial super-resolution, temporal super-resolution (frame interpolation), and video refinement in a **unified framework**.
+VEnhancer achieves spatial super-resolution, temporal super-resolution (i.e, frame interpolation), and video refinement in **one model**.
 It is flexible to adapt to different upsampling factors (e.g., 1x~8x) for either spatial or temporal super-resolution. Besides, it provides flexible control to modify the refinement strength for handling diversified video artifacts.
 
 It follows ControlNet and copies the architecures and weights of multi-frame encoder and middle block of a pretrained video diffusion model to build a trainable condition network.
@@ -144,19 +146,25 @@ sudo apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 ## :dna: Pretrained Models
 | Model Name | Description | HuggingFace | BaiduNetdisk  |
 | :---------: | :----------: | :----------: | :----------: |
-| venhancer_paper.pth  | video enhancement model, paper version | [download](https://huggingface.co/jwhejwhe/VEnhancer/resolve/main/venhancer_paper.pt) | [download](https://pan.baidu.com/s/15t20RGvEHqJOMmhA_zRLiA?pwd=cpsd)|
+| venhancer_paper.pth  | video enhancement model, paper version, very creative. | [download](https://huggingface.co/jwhejwhe/VEnhancer/resolve/main/venhancer_paper.pt) | [download](https://pan.baidu.com/s/15t20RGvEHqJOMmhA_zRLiA?pwd=cpsd)|
 
 ## 💫 Inference
 1) Download the VEnhancer model and then put the checkpoint in the `VEnhancer/ckpts` directory. (optional as it can be done automatically)
-2) run the following command.
+2) run the following command
 ```bash
   bash run_VEnhancer.sh
 ```
-In `run_VEnhancer.sh`,
-- `prompt` is the text prompt. Short prompts (e.g., one or two sentences) are more suitable for VEnhancer.
-- `up_scale` is the upsampling factor ($1\sim8$) for spatial super-resolution. $\times3,4$ are recommended.
-- `target_fps` is your expected target fps. default is 24.
-- `noise_aug` is the noise level ($0\sim300$) regarding noise augmentation. higher noise corresponds to stronger refinement.
+for single GPU inference, or
+```bash
+  bash run_VEnhancer_MultiGPU.sh
+```
+for muliple GPU inference.
+
+In `run_VEnhancer.sh` or `run_VEnhancer_MultiGPU.sh`,
+- `up_scale` is the upsampling factor ($1\sim8$) for spatial super-resolution. $\times3,4$ are recommended. Note that the target resolution will be adjusted no higher than 2k resolution.
+- `target_fps` is your expected target fps, and the default is 24.
+- `noise_aug` is the noise level ($0\sim300$) regarding noise augmentation. higher noise corresponds to stronger refinement. $200\sim300$ are recommended.
+- Regarding prompt, you can use `--filename_as_prompt` to automatically use filename as prompt; or you can write the prompt to a txt file, and specify the prompt_path by setting `--prompt_path` [your_prompt_path]; or directly provide the prompt by specifying `--prompt` [your_prompt].
 
 ### Gradio
 The same functionality is also available as a gradio demo

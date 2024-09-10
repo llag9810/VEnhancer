@@ -3,6 +3,7 @@ import random
 import torch
 
 from video_to_video.utils.logger import get_logger
+from video_to_video.utils.util import blend_time
 from .schedules_sdedit import karras_schedule
 from .solvers_sdedit import sample_dpmpp_2m_sde, sample_heun
 
@@ -184,25 +185,27 @@ class GaussianDiffusion(object):
         def model_chunk_fn(xt, sigma):
             # denoising
             t = self._sigma_to_t(sigma).repeat(len(xt)).round().long()
-            O_LEN = chunk_inds[0][-1] - chunk_inds[1][0]
-            cut_f_ind = O_LEN // 2
+            overlap_time = chunk_inds[0][1] - chunk_inds[1][0] if len(chunk_inds) > 1 else 0
 
-            results_list = []
+            time = []
             for i in range(len(chunk_inds)):
                 ind_start, ind_end = chunk_inds[i]
                 xt_chunk = xt[:, :, ind_start:ind_end].clone()
-                cur_f = xt_chunk.size(2)
                 model_kwargs[3]["mask_cond"] = mask_cond[:, ind_start:ind_end].clone()
                 x0_chunk = self.denoise(
                     xt_chunk, t, None, model, model_kwargs, guide_scale, guide_rescale, clamp, percentile
                 )[-2]
-                if i == 0:
-                    results_list.append(x0_chunk[:, :, : cur_f + cut_f_ind - O_LEN])
-                elif i == len(chunk_inds) - 1:
-                    results_list.append(x0_chunk[:, :, cut_f_ind:])
+                time.append(x0_chunk)
+            blended_time = []
+            for k, chunk in enumerate(time):
+                chunk_size = chunk.size(2)
+                if k > 0:
+                    chunk = blend_time(time[k - 1], chunk, overlap_time)
+                if k != len(time) - 1:
+                    blended_time.append(chunk[:, :, : chunk_size - overlap_time])
                 else:
-                    results_list.append(x0_chunk[:, :, cut_f_ind : cur_f + cut_f_ind - O_LEN])
-            x0 = torch.concat(results_list, dim=2)
+                    blended_time.append(chunk)
+            x0 = torch.concat(blended_time, dim=2)
             torch.cuda.empty_cache()
             return x0
 

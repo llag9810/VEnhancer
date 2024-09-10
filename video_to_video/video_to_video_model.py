@@ -13,6 +13,7 @@ from video_to_video.diffusion.schedules_sdedit import noise_schedule
 from video_to_video.modules import *
 from video_to_video.utils.config import cfg
 from video_to_video.utils.logger import get_logger
+from video_to_video.utils.util import *
 
 logger = get_logger()
 
@@ -143,13 +144,11 @@ class VideoToVideo:
             torch.cuda.empty_cache()
 
             logger.info(f"sampling, finished.")
-            vid_tensor_gen = self.vae_decode_chunk(gen_vid)
+            gen_video = self.tiled_chunked_decode(gen_vid)
             logger.info(f"temporal vae decoding, finished.")
 
         w1, w2, h1, h2 = padding
-        vid_tensor_gen = vid_tensor_gen[:, :, h1 : h + h1, w1 : w + w1]
-
-        gen_video = rearrange(vid_tensor_gen, "(b f) c h w -> b c f h w", b=bs)
+        gen_video = gen_video[:, :, :, h1 : h + h1, w1 : w + w1]
 
         torch.cuda.empty_cache()
 
@@ -158,71 +157,79 @@ class VideoToVideo:
     def temporal_vae_decode(self, z, num_f):
         return self.vae.decode(z / self.vae.config.scaling_factor, num_frames=num_f).sample
 
-    def vae_decode_chunk(self, z, chunk_size=3):
-        z = rearrange(z, "b c f h w -> (b f) c h w")
-        video = []
-        for ind in range(0, z.shape[0], chunk_size):
-            num_f = z[ind : ind + chunk_size].shape[0]
-            video.append(self.temporal_vae_decode(z[ind : ind + chunk_size], num_f))
-        video = torch.cat(video)
-        return video
-
     def vae_encode(self, t, chunk_size=1):
-        num_f = t.shape[1]
+        bs = t.shape[0]
         t = rearrange(t, "b f c h w -> (b f) c h w")
         z_list = []
         for ind in range(0, t.shape[0], chunk_size):
             z_list.append(self.vae.encode(t[ind : ind + chunk_size]).latent_dist.sample())
         z = torch.cat(z_list, dim=0)
-        z = rearrange(z, "(b f) c h w -> b c f h w", f=num_f)
+        z = rearrange(z, "(b f) c h w -> b c f h w", b=bs)
         return z * self.vae.config.scaling_factor
 
+    def tiled_chunked_decode(self, z):
+        batch_size, num_channels, num_frames, height, width = z.shape
 
-def pad_to_fit(h, w):
-    BEST_H, BEST_W = 720, 1280
+        self.frame_chunk_size = 5
+        self.tile_img_height = 576
+        self.tile_img_width = 1024
 
-    if h < BEST_H:
-        h1, h2 = _create_pad(h, BEST_H)
-    elif h == BEST_H:
-        h1 = h2 = 0
-    else:
-        h1 = 0
-        h2 = int((h + 48) // 64 * 64) + 64 - 48 - h
+        self.tile_overlap_ratio_height = 1 / 6
+        self.tile_overlap_ratio_width = 1 / 5
+        self.tile_overlap_ratio_time = 1 / 2
 
-    if w < BEST_W:
-        w1, w2 = _create_pad(w, BEST_W)
-    elif w == BEST_W:
-        w1 = w2 = 0
-    else:
-        w1 = 0
-        w2 = int(w // 64 * 64) + 64 - w
-    return (w1, w2, h1, h2)
+        overlap_img_height = int(self.tile_img_height * self.tile_overlap_ratio_height)
+        overlap_img_width = int(self.tile_img_width * self.tile_overlap_ratio_width)
 
+        self.tile_z_height = self.tile_img_height // 8
+        self.tile_z_width = self.tile_img_width // 8
 
-def _create_pad(h, max_len):
-    h1 = int((max_len - h) // 2)
-    h2 = max_len - h1 - h
-    return h1, h2
+        overlap_z_height = overlap_img_height // 8
+        overlap_z_width = overlap_img_width // 8
 
+        overlap_time = int(self.frame_chunk_size * self.tile_overlap_ratio_time)
 
-def make_chunks(f_num, interp_f_num, chunk_overlap_ratio=0.5):
-    MAX_CHUNK_LEN = 24
-    MAX_O_LEN = MAX_CHUNK_LEN * chunk_overlap_ratio
-    chunk_len = int((MAX_CHUNK_LEN - 1) // (1 + interp_f_num) * (interp_f_num + 1) + 1)
-    o_len = int((MAX_O_LEN - 1) // (1 + interp_f_num) * (interp_f_num + 1) + 1)
-    chunk_inds = sliding_windows_1d(f_num, chunk_len, o_len)
-    return chunk_inds
+        images = z.new_zeros((batch_size, 3, num_frames, height * 8, width * 8))
+        count = images.clone()
+        height_inds = sliding_windows_1d(height, self.tile_z_height, overlap_z_height)
+        for start_height, end_height in height_inds:
+            width_inds = sliding_windows_1d(width, self.tile_z_width, overlap_z_width)
+            for start_width, end_width in width_inds:
+                time_inds = sliding_windows_1d(num_frames, self.frame_chunk_size, overlap_time)
+                time = []
+                for start_frame, end_frame in time_inds:
+                    tile = z[
+                        :,
+                        :,
+                        start_frame:end_frame,
+                        start_height:end_height,
+                        start_width:end_width,
+                    ]
+                    tile_f_num = tile.size(2)
+                    tile = rearrange(tile, "b c f h w -> (b f) c h w")
+                    tile = self.temporal_vae_decode(tile, tile_f_num)
+                    tile = rearrange(tile, "(b f) c h w -> b c f h w", b=batch_size)
+                    time.append(tile)
+                blended_time = []
+                for k, chunk in enumerate(time):
+                    if k > 0:
+                        chunk = blend_time(time[k - 1], chunk, overlap_time)
+                    if k != len(time) - 1:
+                        chunk_size = chunk.size(2)
+                        blended_time.append(chunk[:, :, : chunk_size - overlap_time])
+                    else:
+                        blended_time.append(chunk)
+                tile_blended_time = torch.cat(blended_time, dim=2)
 
+                _, _, _, tile_h, tile_w = tile_blended_time.shape
+                weights = gaussian_weights(tile_w, tile_h)[None, None, None]
+                weights = torch.tensor(weights, dtype=images.dtype, device=images.device)
 
-def sliding_windows_1d(length, window_size, overlap_size):
-    stride = window_size - overlap_size
-    ind = 0
-    coords = []
-    while ind < length:
-        if ind + window_size * 1.25 >= length:
-            coords.append((ind, length))
-            break
-        else:
-            coords.append((ind, ind + window_size))
-            ind += stride
-    return coords
+                images[:, :, :, start_height * 8 : end_height * 8, start_width * 8 : end_width * 8] += (
+                    tile_blended_time * weights
+                )
+                count[:, :, :, start_height * 8 : end_height * 8, start_width * 8 : end_width * 8] += weights
+
+        images.div_(count)
+
+        return images

@@ -8,6 +8,7 @@ import cv2
 from einops import rearrange
 import numpy as np
 import torch
+import torch.nn.functional as F
 import torchvision.transforms.functional as transforms_F
 
 from video_to_video.utils.logger import get_logger
@@ -66,6 +67,16 @@ def make_mask_cond(in_f_num, interp_f_num):
     return mask_cond
 
 
+def load_prompt_list(file_path):
+    files = []
+    with open(file_path, "r") as fin:
+        for line in fin:
+            path = line.strip()
+            if path:
+                files.append(path)
+    return files
+
+
 def load_video(vid_path):
     capture = cv2.VideoCapture(vid_path)
     _fps = capture.get(cv2.CAP_PROP_FPS)
@@ -98,7 +109,7 @@ def save_video(video, save_dir, file_name, fps=16.0):
      -vcodec libx264 -crf 17 -pix_fmt yuv420p {tmp_path}"
     status, output = subprocess.getstatusoutput(cmd)
     if status != 0:
-        logger.error("Save Video Error with {}".format(output))
+        logger.error(f"Save Video Error with {output}")
     os.system(f"rm -rf {temp_dir}")
     os.rename(tmp_path, output_path)
 
