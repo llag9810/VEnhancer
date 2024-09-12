@@ -40,21 +40,13 @@
     </h4>
 </div>
 
-<strong>VEnhancer, a generative space-time enhancement framework that can improve the existing T2V results. </strong>
+<strong>VEnhancer, an All-in-One generative video enhancement model that can achieve spatial super-resolution, temporal super-resolution, and video refinement for AI-generated videos.</strong>
 
 <table class="center">
   <tr>
     <td colspan="1">AIGC video</td>
     <td colspan="1">+VEnhancer</td>
   </tr>
-  <!-- <tr>
-  <td>
-    <img src=assets/input_raccoon_4.gif width="380">
-  </td>
-  <td>
-    <img src=assets/out_raccoon_4.gif width="380">
-  </td>
-  </tr> -->
   <tr>
   <td>
     <img src=assets/input_fish.gif width="380">
@@ -77,43 +69,51 @@
 
 
 ## 🔥 Update
+- [2024.09.12] 😸 Release our version 2 checkpoint: **venhancer_v2.pt** . It is less creative, but is able to generate more texture details, and has better identity preservation, which is more suitable for enhancing videos with profiles.
 - [2024.09.10] 😸 Support **Multiple GPU Inference** and **tiled VAE** for temporal VAE decoding. And more stable performance for long video enhancement.
 - [2024.08.18] 😸 Support enhancement for **abitrary long videos** (by spliting the videos into muliple chunks with overlaps); **Faster sampling** with only 15 steps without obvious quality loss (by setting `--solver_mode 'fast'` in the script command); Use **temporal VAE** to reduce video flickering.
 - [2024.07.28] 🔥 Inference code and pretrained video enhancement model are released.
 - [2024.07.10] 🤗 This repo is created.
 
-## Open Source Plan
+<!-- ## Open Source Plan
 
 - [x] Release code of Multiple GPU Inference.
 - [x] Release code of tiled VAE.
-- [ ] Release model that is optimized for better idenity preservation.
+- [ ] Release model that is optimized for better idenity preservation. -->
 
-:star::star::star: Star us :star::star::star:! And we will speed up the open-sourcing process :heart:.
+<!-- :star::star::star: Star us :star::star::star:! And we will speed up the open-sourcing process :heart:. -->
 
-## 🔥🔥 News
+## :astonished: Gallery
 
-- [2024.09.02] We have enhanced T2V results from [Open-Sora](https://github.com/hpcaitech/Open-Sora) 🤗.
+
+| Prompt| Input & Result | Model Version |
+| :-: | :----------: | :-: |
+|<div style="width:150px">A close-up shot of a woman standing in a dimly lit room. she is wearing a traditional chinese outfit, which includes a red and gold dress with intricate designs and a matching headpiece.</div>|[Open-Sora](https://github.com/hpcaitech/Open-Sora)<br/><video src="https://github.com/user-attachments/assets/4a514853-65f6-40b8-8b5d-d14835bb9297" width="100%" controls autoplay></video> | <div style="width:50px">v2</div>|
+|<div style="width:150px">A little brick man visiting an art gallery.</div>|[Kling](https://kling.kuaishou.com/en)<br/><video src="https://github.com/user-attachments/assets/39a39459-4a69-4ef7-80ef-74df066decb5" width="100%" controls autoplay></video><br/><video src="https://github.com/user-attachments/assets/d110bec4-9ea1-4348-a6db-e9dd6cce4bc2" width="100%" controls autoplay></video> | <div style="width:50px">v1</div>|
+|<div style="width:150px">A detailed wooden toy ship with intricately carved masts and sails is seen gliding smoothly over a plush, blue carpet that mimics the waves of the sea.</div>|[CogVideoX](https://github.com/THUDM/CogVideo)<video src="https://github.com/user-attachments/assets/d6ba4ebe-a970-4db1-ade1-03bfa8e52a20" width="100%" controls autoplay></video><video src="https://github.com/user-attachments/assets/bf97116e-2fbc-4e29-b559-4fe08dc65c02" width="100%" controls autoplay></video>|<div style="width:50px">v2</div>|
+
+<!-- - [2024.09.02] We have enhanced T2V results from [Open-Sora](https://github.com/hpcaitech/Open-Sora) 🤗.
 <div align="center">
   <p>Prompt: a close-up shot of a woman standing in a dimly lit room. she is wearing a traditional chinese outfit, which includes a red and gold dress with intricate designs and a matching headpiece.</p>
-  <video src="https://github.com/user-attachments/assets/4a514853-65f6-40b8-8b5d-d14835bb9297" width="80%" controls autoplay></video>
+  <video src="https://github.com/user-attachments/assets/4a514853-65f6-40b8-8b5d-d14835bb9297" width="80%" controls autoplay></video> -->
 </div>
 
-
+<!--
 - [2024.08.23] We have enhanced T2V results from [keling](https://kling.kuaishou.com/en) 🤗.
 <div align="center">
   <p>Prompt: A little brick man visiting an art gallery.</p>
   <video src="https://github.com/user-attachments/assets/39a39459-4a69-4ef7-80ef-74df066decb5" width="80%" controls autoplay></video>
   <video src="https://github.com/user-attachments/assets/d110bec4-9ea1-4348-a6db-e9dd6cce4bc2" width="80%" controls autoplay></video>
-</div>
+</div> -->
 
 
-- [2024.08.19] We have enhanced some T2V results from [CogVideoX](https://github.com/THUDM/CogVideo) 🤗.
+<!-- - [2024.08.19] We have enhanced some T2V results from [CogVideoX](https://github.com/THUDM/CogVideo) 🤗.
 
 <div align="center">
   <p>Prompt: A detailed wooden toy ship with intricately carved masts and sails is seen gliding smoothly over a plush, blue carpet that mimics the waves of the sea. </p>
   <video src="https://github.com/user-attachments/assets/d6ba4ebe-a970-4db1-ade1-03bfa8e52a20" width="80%" controls autoplay></video>
   <video src="https://github.com/user-attachments/assets/bf97116e-2fbc-4e29-b559-4fe08dc65c02" width="80%" controls autoplay></video>
-</div>
+</div> -->
 
 
 ## 🎬 Overview
@@ -146,30 +146,33 @@ sudo apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 ## :dna: Pretrained Models
 | Model Name | Description | HuggingFace | BaiduNetdisk  |
 | :---------: | :----------: | :----------: | :----------: |
-| venhancer_paper.pth  | video enhancement model, paper version, very creative. | [download](https://huggingface.co/jwhejwhe/VEnhancer/resolve/main/venhancer_paper.pt) | [download](https://pan.baidu.com/s/15t20RGvEHqJOMmhA_zRLiA?pwd=cpsd)|
+| venhancer_paper.pth  | very creative, strong refinement, but sometimes over-smooths edges and texture details. | [download](https://huggingface.co/jwhejwhe/VEnhancer/resolve/main/venhancer_paper.pt?download=true) | [download](https://pan.baidu.com/s/15t20RGvEHqJOMmhA_zRLiA?pwd=cpsd)|
+| venhancer_v2.pth  | less creative, but can generate better texture details, and has better identity preservation. | [download](https://huggingface.co/jwhejwhe/VEnhancer/resolve/main/venhancer_v2.pt?download=true) | [download](https://pan.baidu.com/s/1mc4s5xqcVqKyL-GwkE0loA?pwd=bbqn)|
 
 ## 💫 Inference
 1) Download the VEnhancer model and then put the checkpoint in the `VEnhancer/ckpts` directory. (optional as it can be done automatically)
-2) run the following command
+2) run the following command.
 ```bash
   bash run_VEnhancer.sh
 ```
-for single GPU inference, or
+for single GPU inference (at least A100 80G is required), or
 ```bash
   bash run_VEnhancer_MultiGPU.sh
 ```
 for muliple GPU inference.
 
 In `run_VEnhancer.sh` or `run_VEnhancer_MultiGPU.sh`,
+- `version`. We now provide two choices: `v1` and `v2` (venhancer_paper.pth and venhancer_v2.pth, respectively).
 - `up_scale` is the upsampling factor ($1\sim8$) for spatial super-resolution. $\times3,4$ are recommended. Note that the target resolution will be adjusted no higher than 2k resolution.
 - `target_fps` is your expected target fps, and the default is 24.
 - `noise_aug` is the noise level ($0\sim300$) regarding noise augmentation. higher noise corresponds to stronger refinement. $200\sim300$ are recommended.
 - Regarding prompt, you can use `--filename_as_prompt` to automatically use filename as prompt; or you can write the prompt to a txt file, and specify the prompt_path by setting `--prompt_path` [your_prompt_path]; or directly provide the prompt by specifying `--prompt` [your_prompt].
+- Regarding sampling, `--solver_mode fast` has fixed 15 sampling steps. For `--solver_mode normal`, you can modify `steps` to trade off efficiency over video quality.
 
 ### Gradio
-The same functionality is also available as a gradio demo
+The same functionality is also available as a gradio demo. Please follow the previous guidelines, and specify the model version (v1 or v2).
 ``` shell
-python gradio_app.py
+python gradio_app.py --version v1
 ```
 
 

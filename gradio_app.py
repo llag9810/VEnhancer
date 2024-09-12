@@ -1,3 +1,4 @@
+import argparse
 import os
 import random
 
@@ -16,9 +17,9 @@ examples = [
 ]
 
 
-def venhancer_demo(result_dir="./tmp/"):
+def venhancer_demo(result_dir="./tmp/", version="v1"):
     css = """#input_video {max-width: 1024px !important} #output_vid {max-width: 2048px; max-height:1280px}"""
-    venhancer = VEnhancer(result_dir)
+    venhancer = VEnhancer(result_dir, version=version)
     with gr.Blocks(analytics_enabled=False, css=css) as venhancer_iface:
         gr.Markdown(
             "<div align='center'> <h1> VEnhancer </span> </h1> \
@@ -68,8 +69,20 @@ def venhancer_demo(result_dir="./tmp/"):
     return venhancer_iface
 
 
+def get_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--version", type=str, default="v1", choices=["v1", "v2"], help="select the checkpoint version."
+    )
+
+    return parser
+
+
 if __name__ == "__main__":
+    parser = get_parser()
+    args = parser.parse_args()
+
     result_dir = os.path.join("./", "results")
-    venhancer_iface = venhancer_demo(result_dir)
+    venhancer_iface = venhancer_demo(result_dir, args.version)
     venhancer_iface.queue(max_size=12)
     venhancer_iface.launch(max_threads=1)

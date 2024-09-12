@@ -121,7 +121,7 @@ def parse_args() -> Namespace:
 
     parser.add_argument("--input_path", required=True, type=str, help="input video path")
     parser.add_argument("--save_dir", type=str, default="results", help="save directory")
-    parser.add_argument("--version", type=str, default="v1", help="model version")
+    parser.add_argument("--version", type=str, default="v1", choices=["v1", "v2"], help="model version")
     parser.add_argument("--model_path", type=str, default="", help="model path")
 
     parser.add_argument("--prompt", type=str, default="a good video", help="prompt")
@@ -129,7 +129,7 @@ def parse_args() -> Namespace:
     parser.add_argument("--filename_as_prompt", action="store_true")
 
     parser.add_argument("--cfg", type=float, default=7.5)
-    parser.add_argument("--solver_mode", type=str, default="fast", help="fast | normal")
+    parser.add_argument("--solver_mode", type=str, default="fast", choices=["fast", "normal"], help="fast | normal")
     parser.add_argument("--steps", type=int, default=15)
 
     parser.add_argument("--noise_aug", type=int, default=200, help="noise augmentation")
@@ -174,8 +174,6 @@ def main():
     steps = args.steps
     solver_mode = args.solver_mode
     guide_scale = args.cfg
-
-    assert solver_mode in ("fast", "normal")
 
     venhancer = VEnhancer(
         result_dir=save_dir,
