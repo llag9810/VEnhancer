@@ -9,7 +9,7 @@ import torch.distributed as dist
 from inference_utils import *
 from video_to_video.context_parallel import get_context_parallel_rank, initialize_context_parallel
 from video_to_video.utils.seed import setup_seed
-from video_to_video.video_to_video_model import VideoToVideo
+from video_to_video.video_to_video_model_parallel import VideoToVideoParallel
 
 logger = get_logger()
 
@@ -28,7 +28,7 @@ class VEnhancer:
 
         model_cfg = EasyDict(__name__="model_cfg")
         model_cfg.model_path = self.model_path
-        self.model = VideoToVideo(model_cfg)
+        self.model = VideoToVideoParallel(model_cfg)
 
         steps = 15 if solver_mode == "fast" else steps
         self.solver_mode = solver_mode
