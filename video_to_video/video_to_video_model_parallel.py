@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from video_to_video.diffusion.diffusion_sdedit import GaussianDiffusion
 from video_to_video.diffusion.schedules_sdedit import noise_schedule
 from video_to_video.modules.embedder import FrozenOpenCLIPEmbedder
-import video_to_video.modules.unet_v2v as unet_v2v
+import video_to_video.modules.unet_v2v_parallel as unet_v2v_parallel
 from video_to_video.utils.config import cfg
 from video_to_video.utils.logger import get_logger
 from video_to_video.utils.util import *
@@ -17,7 +17,7 @@ from video_to_video.utils.util import *
 logger = get_logger()
 
 
-class VideoToVideo:
+class VideoToVideoParallel:
     def __init__(self, opt):
         self.opt = opt
         self.device = torch.device(f"cuda")
@@ -26,7 +26,7 @@ class VideoToVideo:
         self.clip_encoder = clip_encoder
         logger.info(f"Build encoder with {cfg.embedder.type}")
 
-        generator = unet_v2v.ControlledV2VUNet()
+        generator = unet_v2v_parallel.ControlledV2VUNet()
         generator = generator.to(self.device)
         generator.eval()
 
