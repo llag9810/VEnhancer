@@ -9,15 +9,24 @@ import torch.distributed as dist
 from inference_utils import *
 from video_to_video.context_parallel import get_context_parallel_rank, initialize_context_parallel
 from video_to_video.utils.seed import setup_seed
-from video_to_video.video_to_video_model import VideoToVideo
+from video_to_video.video_to_video_model_parallel import VideoToVideoParallel
 
 logger = get_logger()
 
 
 class VEnhancer:
-    def __init__(self, result_dir="./results/", model_path="", solver_mode="fast", steps=15, guide_scale=7.5, s_cond=8):
+    def __init__(
+        self,
+        result_dir="./results/",
+        version="v1",
+        model_path="",
+        solver_mode="fast",
+        steps=15,
+        guide_scale=7.5,
+        s_cond=8,
+    ):
         if not model_path:
-            self.download_model()
+            self.download_model(version=version)
         else:
             self.model_path = model_path
         assert os.path.exists(self.model_path), "Error: checkpoint Not Found!"
@@ -28,7 +37,7 @@ class VEnhancer:
 
         model_cfg = EasyDict(__name__="model_cfg")
         model_cfg.model_path = self.model_path
-        self.model = VideoToVideo(model_cfg)
+        self.model = VideoToVideoParallel(model_cfg)
 
         steps = 15 if solver_mode == "fast" else steps
         self.solver_mode = solver_mode
@@ -96,6 +105,8 @@ class VEnhancer:
     def download_model(self):
         REPO_ID = "jwhejwhe/VEnhancer"
         filename = "venhancer_paper.pt"
+        if version == "v2":
+            filename = "venhancer_v2.pt"
         ckpt_dir = "./ckpts/"
         os.makedirs(ckpt_dir, exist_ok=True)
         local_file = os.path.join(ckpt_dir, filename)
@@ -110,7 +121,9 @@ def parse_args() -> Namespace:
 
     parser.add_argument("--input_path", required=True, type=str, help="input video path")
     parser.add_argument("--save_dir", type=str, default="results", help="save directory")
+    parser.add_argument("--version", type=str, default="v1", help="model version")
     parser.add_argument("--model_path", type=str, default="", help="model path")
+
     parser.add_argument("--prompt", type=str, default="a good video", help="prompt")
     parser.add_argument("--prompt_path", type=str, default="", help="prompt path")
     parser.add_argument("--filename_as_prompt", action="store_true")
@@ -149,6 +162,7 @@ def main():
     prompt = args.prompt
     prompt_path = args.prompt_path
     filename_as_prompt = args.filename_as_prompt
+    version = args.version
     model_path = args.model_path
     save_dir = args.save_dir
 
@@ -165,6 +179,7 @@ def main():
 
     venhancer = VEnhancer(
         result_dir=save_dir,
+        version=version,
         model_path=model_path,
         solver_mode=solver_mode,
         steps=steps,
