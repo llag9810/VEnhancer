@@ -78,8 +78,6 @@
 <!-- ## Open Source Plan
 
 - [x] Release code of Multiple GPU Inference.
-- [x] Release code of tiled VAE.
-- [ ] Release model that is optimized for better idenity preservation. -->
 
 <!-- :star::star::star: Star us :star::star::star:! And we will speed up the open-sourcing process :heart:. -->
 
@@ -91,29 +89,6 @@
 |Prompt: A close-up shot of a woman standing in a dimly lit room. she is wearing a traditional chinese outfit, which includes a red and gold dress with intricate designs and a matching headpiece.<br/><video src="https://github.com/user-attachments/assets/4a514853-65f6-40b8-8b5d-d14835bb9297" width="100%" controls autoplay></video>from [Open-Sora](https://github.com/hpcaitech/Open-Sora) | <div style="width:100px">v2</div>|
 |Prompt: A little brick man visiting an art gallery.<br/><video src="https://github.com/user-attachments/assets/39a39459-4a69-4ef7-80ef-74df066decb5" width="100%" controls autoplay></video><br/><video src="https://github.com/user-attachments/assets/d110bec4-9ea1-4348-a6db-e9dd6cce4bc2" width="100%" controls autoplay></video>from [Kling](https://kling.kuaishou.com/en) | <div style="width:100px">v1</div>|
 |Prompt: A detailed wooden toy ship with intricately carved masts and sails is seen gliding smoothly over a plush, blue carpet that mimics the waves of the sea.<br/><video src="https://github.com/user-attachments/assets/d6ba4ebe-a970-4db1-ade1-03bfa8e52a20" width="100%" controls autoplay></video><video src="https://github.com/user-attachments/assets/bf97116e-2fbc-4e29-b559-4fe08dc65c02" width="100%" controls autoplay></video>from [CogVideoX](https://github.com/THUDM/CogVideo)|<div style="width:100px">v2</div>|
-
-<!-- - [2024.09.02] We have enhanced T2V results from [Open-Sora](https://github.com/hpcaitech/Open-Sora) 🤗.
-<div align="center">
-  <p>Prompt: a close-up shot of a woman standing in a dimly lit room. she is wearing a traditional chinese outfit, which includes a red and gold dress with intricate designs and a matching headpiece.</p>
-  <video src="https://github.com/user-attachments/assets/4a514853-65f6-40b8-8b5d-d14835bb9297" width="80%" controls autoplay></video> -->
-</div>
-
-<!--
-- [2024.08.23] We have enhanced T2V results from [keling](https://kling.kuaishou.com/en) 🤗.
-<div align="center">
-  <p>Prompt: A little brick man visiting an art gallery.</p>
-  <video src="https://github.com/user-attachments/assets/39a39459-4a69-4ef7-80ef-74df066decb5" width="80%" controls autoplay></video>
-  <video src="https://github.com/user-attachments/assets/d110bec4-9ea1-4348-a6db-e9dd6cce4bc2" width="80%" controls autoplay></video>
-</div> -->
-
-
-<!-- - [2024.08.19] We have enhanced some T2V results from [CogVideoX](https://github.com/THUDM/CogVideo) 🤗.
-
-<div align="center">
-  <p>Prompt: A detailed wooden toy ship with intricately carved masts and sails is seen gliding smoothly over a plush, blue carpet that mimics the waves of the sea. </p>
-  <video src="https://github.com/user-attachments/assets/d6ba4ebe-a970-4db1-ade1-03bfa8e52a20" width="80%" controls autoplay></video>
-  <video src="https://github.com/user-attachments/assets/bf97116e-2fbc-4e29-b559-4fe08dc65c02" width="80%" controls autoplay></video>
-</div> -->
 
 
 ## 🎬 Overview
