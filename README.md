@@ -69,7 +69,7 @@
 
 
 ## 🔥 Update
-- [2024.09.12] 😸 Release our version 2 checkpoint: **venhancer_v2.pt** . It is less creative, but is able to generate more texture details, and has better identity preservation, which is more suitable for enhancing videos with profiles.
+- [2024.09.12] 😸 Release our version 2 checkpoint: **[venhancer_v2.pt](https://huggingface.co/jwhejwhe/VEnhancer/resolve/main/venhancer_v2.pt)** . It is less creative, but is able to generate more texture details, and has better identity preservation, which is more suitable for enhancing videos with profiles.
 - [2024.09.10] 😸 Support **Multiple GPU Inference** and **tiled VAE** for temporal VAE decoding. And more stable performance for long video enhancement.
 - [2024.08.18] 😸 Support enhancement for **abitrary long videos** (by spliting the videos into muliple chunks with overlaps); **Faster sampling** with only 15 steps without obvious quality loss (by setting `--solver_mode 'fast'` in the script command); Use **temporal VAE** to reduce video flickering.
 - [2024.07.28] 🔥 Inference code and pretrained video enhancement model are released.
@@ -86,11 +86,11 @@
 ## :astonished: Gallery
 
 
-| Prompt| Input & Result | Model Version |
-| :-: | :----------: | :-: |
-|<div style="width:150px">A close-up shot of a woman standing in a dimly lit room. she is wearing a traditional chinese outfit, which includes a red and gold dress with intricate designs and a matching headpiece.</div>|[Open-Sora](https://github.com/hpcaitech/Open-Sora)<br/><video src="https://github.com/user-attachments/assets/4a514853-65f6-40b8-8b5d-d14835bb9297" width="100%" controls autoplay></video> | <div style="width:50px">v2</div>|
-|<div style="width:150px">A little brick man visiting an art gallery.</div>|[Kling](https://kling.kuaishou.com/en)<br/><video src="https://github.com/user-attachments/assets/39a39459-4a69-4ef7-80ef-74df066decb5" width="100%" controls autoplay></video><br/><video src="https://github.com/user-attachments/assets/d110bec4-9ea1-4348-a6db-e9dd6cce4bc2" width="100%" controls autoplay></video> | <div style="width:50px">v1</div>|
-|<div style="width:150px">A detailed wooden toy ship with intricately carved masts and sails is seen gliding smoothly over a plush, blue carpet that mimics the waves of the sea.</div>|[CogVideoX](https://github.com/THUDM/CogVideo)<video src="https://github.com/user-attachments/assets/d6ba4ebe-a970-4db1-ade1-03bfa8e52a20" width="100%" controls autoplay></video><video src="https://github.com/user-attachments/assets/bf97116e-2fbc-4e29-b559-4fe08dc65c02" width="100%" controls autoplay></video>|<div style="width:50px">v2</div>|
+| Inputs & Results | Model Version |
+| :---------- | :-: |
+|Prompt: A close-up shot of a woman standing in a dimly lit room. she is wearing a traditional chinese outfit, which includes a red and gold dress with intricate designs and a matching headpiece.<br/><video src="https://github.com/user-attachments/assets/4a514853-65f6-40b8-8b5d-d14835bb9297" width="100%" controls autoplay></video>from [Open-Sora](https://github.com/hpcaitech/Open-Sora) | <div style="width:100px">v2</div>|
+|Prompt: A little brick man visiting an art gallery.<br/><video src="https://github.com/user-attachments/assets/39a39459-4a69-4ef7-80ef-74df066decb5" width="100%" controls autoplay></video><br/><video src="https://github.com/user-attachments/assets/d110bec4-9ea1-4348-a6db-e9dd6cce4bc2" width="100%" controls autoplay></video>from [Kling](https://kling.kuaishou.com/en) | <div style="width:100px">v1</div>|
+|Prompt: A detailed wooden toy ship with intricately carved masts and sails is seen gliding smoothly over a plush, blue carpet that mimics the waves of the sea.<br/><video src="https://github.com/user-attachments/assets/d6ba4ebe-a970-4db1-ade1-03bfa8e52a20" width="100%" controls autoplay></video><video src="https://github.com/user-attachments/assets/bf97116e-2fbc-4e29-b559-4fe08dc65c02" width="100%" controls autoplay></video>from [CogVideoX](https://github.com/THUDM/CogVideo)|<div style="width:100px">v2</div>|
 
 <!-- - [2024.09.02] We have enhanced T2V results from [Open-Sora](https://github.com/hpcaitech/Open-Sora) 🤗.
 <div align="center">
