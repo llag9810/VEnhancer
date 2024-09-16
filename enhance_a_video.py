@@ -61,7 +61,7 @@ class VEnhancer:
         video_data = preprocess(input_frames)
         _, _, h, w = video_data.shape
         logger.info(f"input resolution: {(h, w)}")
-        target_h, target_w = adjust_resolution(h, w, up_scale)
+        target_h, target_w = adjust_resolution(h, w)
         logger.info(f"target resolution: {(target_h, target_w)}")
 
         mask_cond = make_mask_cond(in_f_num, interp_f_num)

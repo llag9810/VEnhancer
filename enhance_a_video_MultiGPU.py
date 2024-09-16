@@ -45,7 +45,7 @@ class VEnhancer:
         self.guide_scale = guide_scale
         self.s_cond = s_cond
 
-    def enhance_a_video(self, video_path, prompt, up_scale=4, target_fps=24, noise_aug=300):
+    def enhance_a_video(self, video_path, prompt, target_fps=24, noise_aug=300):
 
         save_name = os.path.splitext(os.path.basename(video_path))[0]
         text = prompt
@@ -64,7 +64,7 @@ class VEnhancer:
         video_data = preprocess(input_frames)
         _, _, h, w = video_data.shape
         logger.info(f"input resolution: {(h, w)}")
-        target_h, target_w = adjust_resolution(h, w, up_scale)
+        target_h, target_w = adjust_resolution(h, w)
         logger.info(f"target resolution: {(target_h, target_w)}")
 
         mask_cond = make_mask_cond(in_f_num, interp_f_num)
@@ -134,7 +134,6 @@ def parse_args() -> Namespace:
 
     parser.add_argument("--noise_aug", type=int, default=200, help="noise augmentation")
     parser.add_argument("--target_fps", type=int, default=24)
-    parser.add_argument("--up_scale", type=float, default=4)
     parser.add_argument("--s_cond", type=float, default=8)
 
     return parser.parse_args()
@@ -167,7 +166,6 @@ def main():
     save_dir = args.save_dir
 
     noise_aug = args.noise_aug
-    up_scale = args.up_scale
     target_fps = args.target_fps
     s_cond = args.s_cond
 
@@ -208,7 +206,7 @@ def main():
             if os.path.isfile(prompt_path):
                 logger.info(f"prompt_path: {prompt_path}")
                 prompt = load_prompt_list(prompt_path)[0]
-        venhancer.enhance_a_video(file_path, prompt, up_scale, target_fps, noise_aug)
+        venhancer.enhance_a_video(file_path, prompt, target_fps, noise_aug)
 
 
 if __name__ == "__main__":
