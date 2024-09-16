@@ -86,35 +86,11 @@
 ## :astonished: Gallery
 
 
-| Input & Result | Model Version |
+| Inputs & Results | Model Version |
 | :---------- | :-: |
-|Prompt: A close-up shot of a woman standing in a dimly lit room. she is wearing a traditional chinese outfit, which includes a red and gold dress with intricate designs and a matching headpiece.<br/><video src="https://github.com/user-attachments/assets/4a514853-65f6-40b8-8b5d-d14835bb9297" width="100%" controls autoplay></video>from [Open-Sora](https://github.com/hpcaitech/Open-Sora) | <div style="width:100px">v2</div>|
+|Prompt: A close-up shot of a woman standing in a dimly lit room. she is wearing a traditional chinese outfit, which includes a red and gold dress with intricate designs and a matching headpiece.<br/><video src="https://github.com/user-attachments/assets/4a514853-65f6-40b8-8b5d-d14835bb9297" width="100%" controls autoplay></video>from [Open-Sora](https://github.com/hpcaitech/Open-Sora)<br/>---<br/>Prompt: Einstein plays guitar.<br/><video src="https://github.com/user-attachments/assets/aa76e8a2-14e2-49a1-915c-147838476ab1" width="50%" controls autoplay></video><video src="https://github.com/user-attachments/assets/f08e6f77-19d4-4847-9356-739a84da38b2" width="50%" controls autoplay></video>from [Kling](https://kling.kuaishou.com/en)<br/>---<br/>Prompt: A girl eating noodles.<br/><video src="https://github.com/user-attachments/assets/cc01bf80-8b49-4314-97a3-1e1ec2d16d6a" width="50%" controls autoplay></video><video src="https://github.com/user-attachments/assets/ce923609-614b-4f87-ba2b-7b831edce40f" width="50%" controls autoplay></video>from [Kling](https://kling.kuaishou.com/en)| <div style="width:100px">v2</div>|
 |Prompt: A little brick man visiting an art gallery.<br/><video src="https://github.com/user-attachments/assets/39a39459-4a69-4ef7-80ef-74df066decb5" width="100%" controls autoplay></video><br/><video src="https://github.com/user-attachments/assets/d110bec4-9ea1-4348-a6db-e9dd6cce4bc2" width="100%" controls autoplay></video>from [Kling](https://kling.kuaishou.com/en) | <div style="width:100px">v1</div>|
-|Prompt: A detailed wooden toy ship with intricately carved masts and sails is seen gliding smoothly over a plush, blue carpet that mimics the waves of the sea.<br/><video src="https://github.com/user-attachments/assets/d6ba4ebe-a970-4db1-ade1-03bfa8e52a20" width="100%" controls autoplay></video><video src="https://github.com/user-attachments/assets/bf97116e-2fbc-4e29-b559-4fe08dc65c02" width="100%" controls autoplay></video>from [CogVideoX](https://github.com/THUDM/CogVideo)|<div style="width:100px">v2</div>|
-
-<!-- - [2024.09.02] We have enhanced T2V results from [Open-Sora](https://github.com/hpcaitech/Open-Sora) 🤗.
-<div align="center">
-  <p>Prompt: a close-up shot of a woman standing in a dimly lit room. she is wearing a traditional chinese outfit, which includes a red and gold dress with intricate designs and a matching headpiece.</p>
-  <video src="https://github.com/user-attachments/assets/4a514853-65f6-40b8-8b5d-d14835bb9297" width="80%" controls autoplay></video> -->
-</div>
-
-<!--
-- [2024.08.23] We have enhanced T2V results from [keling](https://kling.kuaishou.com/en) 🤗.
-<div align="center">
-  <p>Prompt: A little brick man visiting an art gallery.</p>
-  <video src="https://github.com/user-attachments/assets/39a39459-4a69-4ef7-80ef-74df066decb5" width="80%" controls autoplay></video>
-  <video src="https://github.com/user-attachments/assets/d110bec4-9ea1-4348-a6db-e9dd6cce4bc2" width="80%" controls autoplay></video>
-</div> -->
-
-
-<!-- - [2024.08.19] We have enhanced some T2V results from [CogVideoX](https://github.com/THUDM/CogVideo) 🤗.
-
-<div align="center">
-  <p>Prompt: A detailed wooden toy ship with intricately carved masts and sails is seen gliding smoothly over a plush, blue carpet that mimics the waves of the sea. </p>
-  <video src="https://github.com/user-attachments/assets/d6ba4ebe-a970-4db1-ade1-03bfa8e52a20" width="80%" controls autoplay></video>
-  <video src="https://github.com/user-attachments/assets/bf97116e-2fbc-4e29-b559-4fe08dc65c02" width="80%" controls autoplay></video>
-</div> -->
-
+<!-- |Prompt: A detailed wooden toy ship with intricately carved masts and sails is seen gliding smoothly over a plush, blue carpet that mimics the waves of the sea.<br/><video src="https://github.com/user-attachments/assets/d6ba4ebe-a970-4db1-ade1-03bfa8e52a20" width="100%" controls autoplay></video><video src="https://github.com/user-attachments/assets/bf97116e-2fbc-4e29-b559-4fe08dc65c02" width="100%" controls autoplay></video>from [CogVideoX](https://github.com/THUDM/CogVideo)|<div style="width:100px">v2</div>| -->
 
 ## 🎬 Overview
 VEnhancer achieves spatial super-resolution, temporal super-resolution (i.e, frame interpolation), and video refinement in **one model**.
@@ -159,14 +135,14 @@ for single GPU inference (at least A100 80G is required), or
 ```bash
   bash run_VEnhancer_MultiGPU.sh
 ```
-for muliple GPU inference.
+for multiple GPU inference.
 
 In `run_VEnhancer.sh` or `run_VEnhancer_MultiGPU.sh`,
 - `version`. We now provide two choices: `v1` and `v2` (venhancer_paper.pth and venhancer_v2.pth, respectively).
 - `up_scale` is the upsampling factor ($1\sim8$) for spatial super-resolution. $\times3,4$ are recommended. Note that the target resolution will be adjusted no higher than 2k resolution.
 - `target_fps` is your expected target fps, and the default is 24.
-- `noise_aug` is the noise level ($0\sim300$) regarding noise augmentation. higher noise corresponds to stronger refinement. $200\sim300$ are recommended.
-- Regarding prompt, you can use `--filename_as_prompt` to automatically use filename as prompt; or you can write the prompt to a txt file, and specify the prompt_path by setting `--prompt_path` [your_prompt_path]; or directly provide the prompt by specifying `--prompt` [your_prompt].
+- `noise_aug` is the noise level ($0\sim300$) regarding noise augmentation. Higher noise corresponds to stronger refinement. $200\sim300$ are recommended.
+- Regarding prompt, you can use `--filename_as_prompt` to automatically use filename as prompt; or you can write the prompt to a txt file, and specify the prompt_path by setting `--prompt_path [your_prompt_path]`; or directly provide the prompt by specifying `--prompt [your_prompt]`.
 - Regarding sampling, `--solver_mode fast` has fixed 15 sampling steps. For `--solver_mode normal`, you can modify `steps` to trade off efficiency over video quality.
 
 ### Gradio

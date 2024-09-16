@@ -96,7 +96,7 @@ class VEnhancer:
         save_video(output, self.result_dir, f"{save_name}.mp4", fps=target_fps)
         return os.path.join(self.result_dir, save_name)
 
-    def download_model(self, version):
+    def download_model(self, version="v1"):
         REPO_ID = "jwhejwhe/VEnhancer"
         filename = "venhancer_paper.pt"
         if version == "v2":
