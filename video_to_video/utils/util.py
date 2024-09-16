@@ -29,7 +29,7 @@ def _create_pad(h, max_len):
 
 
 def make_chunks(f_num, interp_f_num, chunk_overlap_ratio=0.5):
-    MAX_CHUNK_LEN = 24
+    MAX_CHUNK_LEN = 32
     MAX_O_LEN = MAX_CHUNK_LEN * chunk_overlap_ratio
     chunk_len = int((MAX_CHUNK_LEN - 1) // (1 + interp_f_num) * (interp_f_num + 1) + 1)
     o_len = int((MAX_O_LEN - 1) // (1 + interp_f_num) * (interp_f_num + 1) + 1)

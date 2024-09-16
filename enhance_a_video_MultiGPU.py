@@ -162,8 +162,8 @@ def main():
     prompt = args.prompt
     prompt_path = args.prompt_path
     filename_as_prompt = args.filename_as_prompt
-    version = args.version
     model_path = args.model_path
+    version = args.version
     save_dir = args.save_dir
 
     noise_aug = args.noise_aug

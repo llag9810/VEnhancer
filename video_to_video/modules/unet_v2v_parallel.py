@@ -15,6 +15,7 @@ import torch.nn.functional as F
 import xformers
 import xformers.ops
 
+from .. import context_parallel
 from ..context_parallel import get_context_parallel_group, get_context_parallel_rank, get_context_parallel_world_size
 from .parallel_modules import ContextParallelConv3d, ContextParallelGroupNorm, all_to_all
 
@@ -682,15 +683,7 @@ class TemporalTransformer(nn.Module):
                 x = block(x)
             x = rearrange(x, "(b hw) f c -> b hw f c", b=b).contiguous()
         else:
-            x = rearrange(x, "(b hw) c f -> b hw f c", b=b).contiguous()
-            for i, block in enumerate(self.transformer_blocks):
-                context[i] = rearrange(context[i], "(b f) l con -> b f l con", f=self.frames).contiguous()
-                # calculate each batch one by one (since number in shape could not greater then 65,535 for some package)
-                for j in range(b):
-                    context_i_j = repeat(
-                        context[i][j], "f l con -> (f r) l con", r=(h * w) // self.frames, f=self.frames
-                    ).contiguous()
-                    x[j] = block(x[j], context=context_i_j)
+            raise NotImplementedError
 
         if self.use_linear:
             x = rearrange(x, "b hw f c -> (b hw) f c").contiguous()
@@ -1086,6 +1079,8 @@ class Vid2VidSDUNet(nn.Module):
 
 
 class ControlledV2VUNet(Vid2VidSDUNet):
+    GroupDict = {}
+
     def __init__(self):
         super(ControlledV2VUNet, self).__init__()
         self.VideoControlNet = VideoControlNet()
@@ -1104,75 +1099,105 @@ class ControlledV2VUNet(Vid2VidSDUNet):
         mask_last_frame_num=0,
     ):
 
-        logger.info(f"complete input shape: {x.shape}")
+        if get_context_parallel_rank() == 0:
+            logger.info(f"complete input shape: {x.shape}")
 
         f = x.shape[2]
+        x_in = x
 
         # assert x.shape[2] % get_context_parallel_world_size() == 0, "frames should be divisible by parallel gpus"
         x = torch.chunk(x, chunks=get_context_parallel_world_size(), dim=2)
-        l_f_shard_per_rank = [_.shape[2] for _ in x]
-        x = x[get_context_parallel_rank()]
 
-        batch, c, f_shard, h, w = x.shape
+        # in some cases, e.g. 49 frames to be processed with ctx_parallel=8,
+        # some rank(s) would not be allocated with frames to process
+        if len(x) < get_context_parallel_world_size():
+            logger.info(f"only {len(x)} GPUs will be used to process the given {f} frames")
+            is_idle = get_context_parallel_rank() >= len(x)
+            real_ctx_parallel_group = context_parallel._CONTEXT_PARALLEL_GROUP
+            real_ctx_parallel_size = context_parallel._CONTEXT_PARALLEL_SIZE
+            real_world = dist.group.WORLD
+            if len(x) not in self.GroupDict:
+                self.GroupDict[len(x)] = torch.distributed.new_group(list(range(len(x))))
+            new_group = self.GroupDict[len(x)]
+            context_parallel._CONTEXT_PARALLEL_GROUP = new_group
+            context_parallel._CONTEXT_PARALLEL_SIZE = len(x)
+            dist.group.WORLD = new_group
 
-        logger.info(f"sharded input shape: {x.shape}")
+        else:
+            real_ctx_parallel_group = context_parallel._CONTEXT_PARALLEL_GROUP
+            real_ctx_parallel_size = context_parallel._CONTEXT_PARALLEL_SIZE
+            real_world = dist.group.WORLD
+            is_idle = False
 
-        device = x.device
-        self.batch = batch
+        if not is_idle:
+            l_f_shard_per_rank = [_.shape[2] for _ in x]
+            x = x[get_context_parallel_rank()]
 
-        logger.info(f"hint shape: {hint.shape}")
-        logger.info(f"t_hint shape: {t_hint.shape}")
-        logger.info(f"mask_cond shape: {mask_cond.shape}")
-        logger.info(f"s_cond shape: {s_cond.shape}")
-        control = self.VideoControlNet(x, t, y, hint=hint, t_hint=t_hint, mask_cond=mask_cond, s_cond=s_cond)
+            batch, c, f_shard, h, w = x.shape
+            self.batch = batch
+            if get_context_parallel_rank() == 0:
+                logger.info(f"sharded input shape: {x.shape}")
+                logger.info(f"hint shape: {hint.shape}")
+                logger.info(f"t_hint shape: {t_hint.shape}")
+                logger.info(f"mask_cond shape: {mask_cond.shape}")
+                logger.info(f"s_cond shape: {s_cond.shape}")
+            control = self.VideoControlNet(x, t, y, hint=hint, t_hint=t_hint, mask_cond=mask_cond, s_cond=s_cond)
 
-        e = self.time_embed(sinusoidal_embedding(t, self.dim))
-        e = e.repeat_interleave(repeats=f_shard, dim=0)
+            e = self.time_embed(sinusoidal_embedding(t, self.dim))
+            e = e.repeat_interleave(repeats=f_shard, dim=0)
 
-        context = y
-        context = context.repeat_interleave(repeats=f_shard, dim=0)
+            context = y
+            context = context.repeat_interleave(repeats=f_shard, dim=0)
 
-        # always in shape (b f) c h w, except for temporal layer
-        x = rearrange(x, "b c f h w -> (b f) c h w")
-        # encoder
-        xs = []
-        for block in self.input_blocks:
-            x = self._forward_single(block, x, e, context)
-            xs.append(x)
-        # middle
-        for block in self.middle_block:
-            x = self._forward_single(block, x, e, context)
+            # always in shape (b f) c h w, except for temporal layer
+            x = rearrange(x, "b c f h w -> (b f) c h w")
+            # encoder
+            xs = []
+            for block in self.input_blocks:
+                x = self._forward_single(block, x, e, context)
+                xs.append(x)
+            # middle
+            for block in self.middle_block:
+                x = self._forward_single(block, x, e, context)
 
-        if control is not None:
-            x = control.pop() + x
+            if control is not None:
+                x = control.pop() + x
 
-        # decoder
-        for block in self.output_blocks:
-            if control is None:
-                x = torch.cat([x, xs.pop()], dim=1)
-            else:
-                x = torch.cat([x, xs.pop() + control.pop()], dim=1)
-            x = self._forward_single(block, x, e, context, reference=xs[-1] if len(xs) > 0 else None)
+            # decoder
+            for block in self.output_blocks:
+                if control is None:
+                    x = torch.cat([x, xs.pop()], dim=1)
+                else:
+                    x = torch.cat([x, xs.pop() + control.pop()], dim=1)
+                x = self._forward_single(block, x, e, context, reference=xs[-1] if len(xs) > 0 else None)
 
-        # head
-        x = self.out(x)
+            # head
+            x = self.out(x)
 
-        # reshape back to (b c f h w)
-        x = rearrange(x, "(b f) c h w -> b c f h w", b=batch)
+            # reshape back to (b c f h w)
+            x = rearrange(x, "(b f) c h w -> b c f h w", b=batch)
 
-        if get_context_parallel_rank() == get_context_parallel_world_size() - 1:
-            if f_shard != l_f_shard_per_rank[0]:
-                pad_f = l_f_shard_per_rank[0] - f_shard
-                x = torch.cat([x, x[:, :, -1:].expand(-1, -1, pad_f, -1, -1)], dim=2)
+            if get_context_parallel_rank() == get_context_parallel_world_size() - 1:
+                if f_shard != l_f_shard_per_rank[0]:
+                    pad_f = l_f_shard_per_rank[0] - f_shard
+                    x = torch.cat([x, x[:, :, -1:].expand(-1, -1, pad_f, -1, -1)], dim=2)
 
-        x = x.contiguous()
+            x = x.contiguous()
 
-        x_all = [torch.empty_like(x) for _ in range(get_context_parallel_world_size())]
-        dist.all_gather(x_all, x, group=get_context_parallel_group())
+            x_out = [torch.empty_like(x) for _ in range(get_context_parallel_world_size())]
+            dist.all_gather(x_out, x, group=get_context_parallel_group())
 
-        x_all = torch.cat(x_all, dim=2)[:, :, :f]
+            x_out = torch.cat(x_out, dim=2)[:, :, :f]
+        else:
+            x_out = x_in
 
-        return x_all
+        context_parallel._CONTEXT_PARALLEL_SIZE = real_ctx_parallel_size
+        context_parallel._CONTEXT_PARALLEL_GROUP = real_ctx_parallel_group
+        dist.group.WORLD = real_world
+
+        dist.barrier()
+
+        return x_out
 
     def _forward_single(self, module, x, e, context, reference=None):
         if isinstance(module, ResidualBlock):
@@ -1432,8 +1457,9 @@ class VideoControlNet(nn.Module):
 
         batch, x_c, f_shard, h, w = x.shape
         f = torch.tensor(f_shard, device="cuda")
-        dist.all_reduce(f)
-        logger.info(f"complete f: {f}")
+        dist.all_reduce(f, group=get_context_parallel_group())
+        if get_context_parallel_rank() == 0:
+            logger.info(f"complete f: {f}")
 
         device = x.device
         self.batch = batch
