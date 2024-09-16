@@ -102,7 +102,7 @@ class VEnhancer:
         dist.barrier()
         return os.path.join(self.result_dir, save_name)
 
-    def download_model(self):
+    def download_model(self, version):
         REPO_ID = "jwhejwhe/VEnhancer"
         filename = "venhancer_paper.pt"
         if version == "v2":
@@ -162,8 +162,8 @@ def main():
     prompt = args.prompt
     prompt_path = args.prompt_path
     filename_as_prompt = args.filename_as_prompt
-    version = args.version
     model_path = args.model_path
+    version = args.version
     save_dir = args.save_dir
 
     noise_aug = args.noise_aug
