@@ -46,9 +46,13 @@ def adjust_resolution(h, w):
     if w < h:
         target_w = 1080
         target_h = int(h * (1080 / w))
+        if target_h % 2 != 0:
+            target_h += 1
     else:
         target_h = 1080
         target_w = int(w * (1080 / h))
+        if target_w % 2 != 0:
+            target_w += 1
     return target_h, target_w
 
 
