@@ -170,8 +170,8 @@ class VideoToVideoParallel:
         batch_size, num_channels, num_frames, height, width = z.shape
 
         self.frame_chunk_size = 3
-        self.tile_img_height = 576
-        self.tile_img_width = 768
+        self.tile_img_height = 512
+        self.tile_img_width = 512
 
         self.tile_overlap_ratio_height = 1 / 6
         self.tile_overlap_ratio_width = 1 / 5
@@ -205,6 +205,7 @@ class VideoToVideoParallel:
                         start_width:end_width,
                     ]
                     tile_f_num = tile.size(2)
+                    logger.info(f"vae input shape: {tile.shape}")
                     tile = rearrange(tile, "b c f h w -> (b f) c h w")
                     tile = self.temporal_vae_decode(tile, tile_f_num)
                     tile = rearrange(tile, "(b f) c h w -> b c f h w", b=batch_size)
