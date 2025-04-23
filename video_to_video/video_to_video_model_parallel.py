@@ -123,7 +123,7 @@ class VideoToVideoParallel:
             model_kwargs.append({"t_hint": t_hint})
 
             torch.cuda.empty_cache()
-            chunk_inds = make_chunks(frames_num, interp_f_num) if frames_num > 32 else None
+            chunk_inds = make_chunks(frames_num, interp_f_num) if frames_num > 24 else None
 
             solver = "dpmpp_2m_sde"  # 'heun' | 'dpmpp_2m_sde'
             gen_vid = self.diffusion.sample(
