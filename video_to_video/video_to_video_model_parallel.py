@@ -169,7 +169,7 @@ class VideoToVideoParallel:
     def tiled_chunked_decode(self, z):
         batch_size, num_channels, num_frames, height, width = z.shape
 
-        self.frame_chunk_size = 3
+        self.frame_chunk_size = 2
         self.tile_img_height = 512
         self.tile_img_width = 512
 
